@@ -23,7 +23,6 @@ Usage:
     aws-instance [options] start <name>
     aws-instance [options] ssh <name> [-- <sshopt>...]
     aws-instance [options] stop <name>
-    aws-instance [options] get-state <name>
 
 Options:
   -h --help                    Show this screen.
@@ -39,7 +38,6 @@ struct Args {
     cmd_start: bool,
     cmd_ssh: bool,
     cmd_stop: bool,
-    cmd_get_state: bool,
     arg_name: Vec<String>,
     flag_profile: String,
     flag_region: String,
@@ -64,9 +62,6 @@ fn main() {
     );
 
     if args.cmd_create {
-        eprintln!("Unimplemented");
-    }
-    else if args.cmd_get_state {
         eprintln!("Unimplemented");
     }
     else if args.cmd_list {
