@@ -5,11 +5,13 @@ extern crate rusoto_core;
 extern crate rusoto_credential;
 extern crate rusoto_ec2;
 
+mod list;
+mod util;
+
 use docopt::Docopt;
 use rusoto_core::{default_tls_client, Region};
-use rusoto_core::request::DispatchSignedRequest;
-use rusoto_credential::{ProfileProvider, ProvideAwsCredentials};
-use rusoto_ec2::{Ec2, Ec2Client};
+use rusoto_credential::ProfileProvider;
+use rusoto_ec2::Ec2Client;
 use std::str::FromStr;
 
 const USAGE: &'static str = "
@@ -43,67 +45,6 @@ struct Args {
     flag_region: String,
 }
 
-fn get_name(instance: &rusoto_ec2::Instance) -> String {
-    match instance.tags {
-        Some(ref tags) => {
-            for tag in tags {
-                if let Some("Name") = tag.key.as_ref().map(String::as_str) {
-                    match tag.value {
-                        Some(ref value) => return value.to_string(),
-                        None => return String::new(),
-                    }
-                }
-            }
-        },
-        None => return String::new(),
-    }
-
-    String::new()
-}
-
-fn get_state(instance: &rusoto_ec2::Instance) -> String {
-    match instance.state {
-        Some(ref state) => {
-            match state.name {
-                Some(ref state_name) => state_name.to_string(),
-                None => String::new(),
-            }
-        },
-        None => String::new(),
-    }
-}
-
-fn list<P, D>(ec2_client: &Ec2Client<P, D>)
-    where
-        P: ProvideAwsCredentials,
-        D: DispatchSignedRequest
-{
-    println!("Name\tInstance ID\t\tState\tAMI ID\t\tPublic IP");
-    let request = rusoto_ec2::DescribeInstancesRequest {
-        dry_run: Some(false),
-        filters: None,
-        instance_ids: None,
-        max_results: None,
-        next_token: None,
-    };
-
-    let result = ec2_client.describe_instances(&request).expect("Error in describe instances");
-    if result.reservations.is_some() {
-        for reservation in result.reservations.unwrap() {
-            if reservation.instances.is_some() {
-                for instance in reservation.instances.unwrap() {
-                    let name = get_name(&instance);
-                    let state = get_state(&instance);
-                    let instance_id = instance.instance_id.unwrap();
-                    let image_id = instance.image_id.unwrap();
-                    let public_ip = instance.public_ip_address.unwrap_or_else(|| "N/A".to_string());
-                    println!("{}\t{}\t{}\t{}\t{}", name, instance_id, state, image_id, public_ip);
-                }
-            }
-        }
-    }
-}
-
 fn main() {
     let args: Args = Docopt::new(USAGE)
                             .and_then(|d| d.deserialize())
@@ -129,7 +70,7 @@ fn main() {
         eprintln!("Unimplemented");
     }
     else if args.cmd_list {
-        list(&ec2_client);
+        list::list(&ec2_client);
     }
     else if args.cmd_ssh {
         eprintln!("Unimplemented");
