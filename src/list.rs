@@ -11,7 +11,6 @@ pub fn list<P, D>(ec2_client: &Ec2Client<P, D>)
         P: ProvideAwsCredentials,
         D: DispatchSignedRequest
 {
-    println!("Name\tInstance ID\t\tState\tAMI ID\t\tPublic IP");
     let request = rusoto_ec2::DescribeInstancesRequest {
         dry_run: Some(false),
         filters: None,
@@ -21,6 +20,7 @@ pub fn list<P, D>(ec2_client: &Ec2Client<P, D>)
     };
 
     let result = ec2_client.describe_instances(&request).expect("Error in describe instances");
+    println!("Name\tInstance ID\t\tState\tAMI ID\t\tPublic IP");
     if result.reservations.is_some() {
         for reservation in result.reservations.unwrap() {
             if reservation.instances.is_some() {
