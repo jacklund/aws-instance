@@ -6,6 +6,7 @@ extern crate rusoto_credential;
 extern crate rusoto_ec2;
 
 mod list;
+mod start;
 mod util;
 
 use docopt::Docopt;
@@ -71,7 +72,9 @@ fn main() {
         eprintln!("Unimplemented");
     }
     else if args.cmd_start {
-        eprintln!("Unimplemented");
+        if let Err(error) = start::start(&ec2_client, &args.arg_name[0]) {
+            eprintln!("{:?}", error);
+        }
     }
     else if args.cmd_stop {
         eprintln!("Unimplemented");
