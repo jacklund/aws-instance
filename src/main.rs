@@ -66,7 +66,9 @@ fn main() {
         eprintln!("Unimplemented");
     }
     else if args.cmd_list {
-        list::list(&ec2_client);
+        if let Err(error) = list::list(&ec2_client) {
+            eprintln!("{:?}", error);
+        }
     }
     else if args.cmd_ssh {
         eprintln!("Unimplemented");
