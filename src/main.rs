@@ -27,7 +27,7 @@ Usage:
 
 Options:
   -h --help                    Show this screen.
-  -r --region <region>         Set the region (Default: us-east-2)
+  -r --region <region>         Set the region [default: us-east-2]
   -p --profile <profile_name>  Set the profile name to use
 ";
 
@@ -52,10 +52,9 @@ fn main() {
     if ! args.flag_profile.is_empty() {
         profile_provider.set_profile(args.flag_profile);
     }
-    let region = match args.flag_region.as_str() {
-        "" => Region::from_str("us-east-2"),
-        _ => Region::from_str(args.flag_region.as_str()),
-    }.expect("Error parsing region name");
+
+    let region = Region::from_str(args.flag_region.as_str()).expect("Error parsing region name");
+
     let ec2_client = Ec2Client::new(
         default_tls_client().unwrap(),
         profile_provider,
