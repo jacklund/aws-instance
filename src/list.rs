@@ -16,9 +16,9 @@ pub fn list<P, D>(ec2_client: &Ec2Client<P, D>) -> Result<(), rusoto_ec2::Descri
     for instance in instances {
         let name = util::get_name(&instance);
         let state = util::get_state(&instance);
-        let instance_id = instance.instance_id.unwrap();
-        let image_id = instance.image_id.unwrap();
-        let public_ip = instance.public_ip_address.unwrap_or_else(|| "N/A".to_string());
+        let instance_id = instance.instance_id.clone().unwrap();
+        let image_id = instance.image_id.clone().unwrap();
+        let public_ip = util::get_public_ip_address(&instance).unwrap_or_else(|| "N/A".to_string());
         println!("{}\t{}\t{}\t{}\t{}", name, instance_id, state, image_id, public_ip);
     }
 

@@ -36,6 +36,10 @@ pub fn get_state(instance: &rusoto_ec2::Instance) -> String {
     }
 }
 
+pub fn get_public_ip_address(instance: &rusoto_ec2::Instance) -> Option<String> {
+    instance.public_ip_address.clone()
+}
+
 pub fn get_instance_by_name<P, D>(ec2_client: &rusoto_ec2::Ec2Client<P, D>, name: &String) -> Result<Option<rusoto_ec2::Instance>, rusoto_ec2::DescribeInstancesError>
     where
         P: ProvideAwsCredentials,

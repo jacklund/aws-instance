@@ -6,6 +6,7 @@ extern crate rusoto_credential;
 extern crate rusoto_ec2;
 
 mod list;
+mod ssh;
 mod start;
 mod util;
 
@@ -42,6 +43,7 @@ struct Args {
     arg_name: Vec<String>,
     flag_profile: String,
     flag_region: String,
+    arg_sshopt: Vec<String>,
 }
 
 fn main() {
@@ -70,7 +72,9 @@ fn main() {
         }
     }
     else if args.cmd_ssh {
-        eprintln!("Unimplemented");
+        if let Err(error) = ssh::ssh(&ec2_client, &args.arg_name[0], &args.arg_sshopt) {
+            eprintln!("{:?}", error);
+        }
     }
     else if args.cmd_start {
         if let Err(error) = start::start(&ec2_client, &args.arg_name[0]) {
