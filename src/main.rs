@@ -5,10 +5,11 @@ extern crate rusoto_core;
 extern crate rusoto_credential;
 extern crate rusoto_ec2;
 
+#[macro_use]
+mod util;
 mod list;
 mod ssh;
 mod start;
-mod util;
 
 use docopt::Docopt;
 use rusoto_core::{default_tls_client, Region};
@@ -29,10 +30,12 @@ Usage:
 
 Options:
   -h --help                    Show this screen.
+  -d --debug                   Print information about what it's doing
   -r --region <region>         Set the region [default: us-east-2]
   -p --profile <profile_name>  Set the profile name to use
 ";
 
+pub static mut DEBUG: bool = false;
 
 #[derive(Debug, Deserialize)]
 struct Args {
@@ -42,6 +45,7 @@ struct Args {
     cmd_ssh: bool,
     cmd_stop: bool,
     arg_name: Vec<String>,
+    flag_debug: bool,
     flag_profile: String,
     flag_region: String,
     arg_sshopt: Vec<String>,
@@ -51,13 +55,21 @@ fn main() {
     let args: Args = Docopt::new(USAGE)
                             .and_then(|d| d.deserialize())
                             .unwrap_or_else(|e| e.exit());
+
+    unsafe {
+        DEBUG = args.flag_debug;
+    }
+
+    debug!("Creating profile provider");
     let mut profile_provider = ProfileProvider::new().expect("Error creating profile provider");
     if ! args.flag_profile.is_empty() {
         profile_provider.set_profile(args.flag_profile);
     }
 
+    debug!("Parsing region string '{}'", args.flag_region);
     let region = Region::from_str(args.flag_region.as_str()).expect("Error parsing region name");
 
+    debug!("Instantiating Ec2Client");
     let ec2_client = Ec2Client::new(
         default_tls_client().unwrap(),
         profile_provider,
@@ -68,16 +80,19 @@ fn main() {
         eprintln!("Unimplemented");
     }
     else if args.cmd_list {
+        debug!("Calling list::list");
         if let Err(error) = list::list(&ec2_client) {
             eprintln!("{:?}", error);
         }
     }
     else if args.cmd_ssh {
+        debug!("Calling ssh::ssh");
         if let Err(error) = ssh::ssh(&ec2_client, &args.arg_name[0], &args.arg_sshopt) {
             eprintln!("{:?}", error);
         }
     }
     else if args.cmd_start {
+        debug!("Calling start::start");
         if let Err(error) = start::start(&ec2_client, &args.arg_name[0]) {
             eprintln!("{:?}", error);
         }

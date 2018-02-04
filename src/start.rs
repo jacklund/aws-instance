@@ -10,12 +10,14 @@ pub fn start<P, D>(ec2_client: &rusoto_ec2::Ec2Client<P, D>, name: &String) -> R
         P: ProvideAwsCredentials,
         D: DispatchSignedRequest
 {
+    debug!("Calling get_instance_by_name({:?})", name);
     match util::get_instance_by_name(ec2_client, name)? {
         Some(instance) => {
             let instance_id = instance.instance_id.unwrap();
             let mut request = rusoto_ec2::StartInstancesRequest::default();
             request.instance_ids = vec![instance_id];
 
+            debug!("Calling start_instances");
             if let Ok(result) = ec2_client.start_instances(&request) {
                 if let Some(state_changes) = result.starting_instances {
                     for state_change in state_changes {

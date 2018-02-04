@@ -6,6 +6,23 @@ use rusoto_core::request::DispatchSignedRequest;
 use rusoto_credential::ProvideAwsCredentials;
 use rusoto_ec2::Ec2;
 
+macro_rules! debug {
+    ($fmt:expr) => {
+        unsafe {
+            if ::DEBUG {
+                (println!($fmt))
+            };
+        }
+    };
+    ($fmt:expr, $($arg:tt)*) => {
+        unsafe {
+            if ::DEBUG {
+                (println!($fmt, $($arg)*))
+            };
+        }
+    };
+}
+
 pub fn get_name(instance: &rusoto_ec2::Instance) -> String {
     match instance.tags {
         Some(ref tags) => {

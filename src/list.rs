@@ -11,6 +11,7 @@ pub fn list<P, D>(ec2_client: &Ec2Client<P, D>) -> Result<(), rusoto_ec2::Descri
         P: ProvideAwsCredentials,
         D: DispatchSignedRequest
 {
+    debug!("Calling get_all_instances");
     let instances = util::get_all_instances(ec2_client)?;
     println!("Name\tInstance ID\t\tState\tAMI ID\t\tPublic IP");
     for instance in instances {

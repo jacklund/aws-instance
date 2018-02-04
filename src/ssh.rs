@@ -12,6 +12,7 @@ pub fn ssh<P, D>(ec2_client: &rusoto_ec2::Ec2Client<P, D>, name: &String, ssh_op
         P: ProvideAwsCredentials,
         D: DispatchSignedRequest
 {
+    debug!("Calling util::get_instance_by_name({:?})", name);
     let instance = match util::get_instance_by_name(ec2_client, name)? {
         Some(instance) => instance,
         None => {
@@ -19,6 +20,7 @@ pub fn ssh<P, D>(ec2_client: &rusoto_ec2::Ec2Client<P, D>, name: &String, ssh_op
             exit(1);
         }
     };
+    debug!("Calling util::get_public_ip_address");
     let ip_address = match util::get_public_ip_address(&instance) {
         Some(ip_address) => ip_address,
         None => {
@@ -27,6 +29,7 @@ pub fn ssh<P, D>(ec2_client: &rusoto_ec2::Ec2Client<P, D>, name: &String, ssh_op
         }
     };
 
+    debug!("Calling ssh");
     let mut child = Command::new("ssh")
         .arg(ip_address)
         .args(vec!["-l", "admin"])
