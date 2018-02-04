@@ -25,6 +25,7 @@ Usage:
     aws-instance [options] start <name>
     aws-instance [options] ssh <name> [-- <sshopt>...]
     aws-instance [options] stop <name>
+    aws-instance --help
 
 Options:
   -h --help                    Show this screen.
