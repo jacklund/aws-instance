@@ -7,6 +7,7 @@ extern crate rusoto_ec2;
 
 #[macro_use]
 mod util;
+mod ec2_wrapper;
 mod list;
 mod ssh;
 mod start;
@@ -75,25 +76,26 @@ fn main() {
         profile_provider,
         region,
     );
+    let ec2_wrapper = ec2_wrapper::AwsEc2Client::new(ec2_client);
 
     if args.cmd_create {
         eprintln!("Unimplemented");
     }
     else if args.cmd_list {
         debug!("Calling list::list");
-        if let Err(error) = list::list(&ec2_client) {
+        if let Err(error) = list::list(&ec2_wrapper) {
             eprintln!("{:?}", error);
         }
     }
     else if args.cmd_ssh {
         debug!("Calling ssh::ssh");
-        if let Err(error) = ssh::ssh(&ec2_client, &args.arg_name[0], &args.arg_sshopt) {
+        if let Err(error) = ssh::ssh(&ec2_wrapper, &args.arg_name[0], &args.arg_sshopt) {
             eprintln!("{:?}", error);
         }
     }
     else if args.cmd_start {
         debug!("Calling start::start");
-        if let Err(error) = start::start(&ec2_client, &args.arg_name[0]) {
+        if let Err(error) = start::start(&ec2_wrapper, &args.arg_name[0]) {
             eprintln!("{:?}", error);
         }
     }

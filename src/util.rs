@@ -2,9 +2,7 @@ extern crate rusoto_core;
 extern crate rusoto_credential;
 extern crate rusoto_ec2;
 
-use rusoto_core::request::DispatchSignedRequest;
-use rusoto_credential::ProvideAwsCredentials;
-use rusoto_ec2::Ec2;
+use super::ec2_wrapper;
 
 macro_rules! debug {
     ($fmt:expr) => {
@@ -57,10 +55,7 @@ pub fn get_public_ip_address(instance: &rusoto_ec2::Instance) -> Option<String> 
     instance.public_ip_address.clone()
 }
 
-pub fn get_instance_by_name<P, D>(ec2_client: &rusoto_ec2::Ec2Client<P, D>, name: &String) -> Result<Option<rusoto_ec2::Instance>, rusoto_ec2::DescribeInstancesError>
-    where
-        P: ProvideAwsCredentials,
-        D: DispatchSignedRequest
+pub fn get_instance_by_name(ec2_client: &ec2_wrapper::Ec2Wrapper, name: &String) -> Result<Option<rusoto_ec2::Instance>, rusoto_ec2::DescribeInstancesError>
 {
     let mut request = rusoto_ec2::DescribeInstancesRequest::default();
     let filter = rusoto_ec2::Filter {
@@ -78,10 +73,7 @@ pub fn get_instance_by_name<P, D>(ec2_client: &rusoto_ec2::Ec2Client<P, D>, name
     Ok(instance)
 }
 
-pub fn get_all_instances<P, D>(ec2_client: &rusoto_ec2::Ec2Client<P, D>) -> Result<Vec<rusoto_ec2::Instance>, rusoto_ec2::DescribeInstancesError>
-    where
-        P: ProvideAwsCredentials,
-        D: DispatchSignedRequest
+pub fn get_all_instances(ec2_client: &ec2_wrapper::Ec2Wrapper) -> Result<Vec<rusoto_ec2::Instance>, rusoto_ec2::DescribeInstancesError>
 {
     let request = rusoto_ec2::DescribeInstancesRequest {
         dry_run: Some(false),

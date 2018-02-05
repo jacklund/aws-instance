@@ -1,15 +1,9 @@
 extern crate rusoto_credential;
 extern crate rusoto_ec2;
 
-use rusoto_core::request::DispatchSignedRequest;
-use rusoto_credential::ProvideAwsCredentials;
-use rusoto_ec2::Ec2Client;
-use super::util;
+use super::{ec2_wrapper, util};
 
-pub fn list<P, D>(ec2_client: &Ec2Client<P, D>) -> Result<(), rusoto_ec2::DescribeInstancesError>
-    where
-        P: ProvideAwsCredentials,
-        D: DispatchSignedRequest
+pub fn list(ec2_client: &ec2_wrapper::Ec2Wrapper) -> Result<(), rusoto_ec2::DescribeInstancesError>
 {
     debug!("Calling get_all_instances");
     let instances = util::get_all_instances(ec2_client)?;
