@@ -1,3 +1,5 @@
+// Wrapper class for ec2_client. I wrap it so that I can mock it (below), which allows me to test
+// the util functions
 extern crate rusoto_core;
 extern crate rusoto_credential;
 extern crate rusoto_ec2;
@@ -51,26 +53,32 @@ impl <P, D> Ec2Wrapper for AwsEc2Client<P, D>
     }
 }
 
+
+// Ec2Client mock wrapper. I use closures here rather than just passing in the results because of a Rust issue
+// (https://github.com/rust-lang/rust/issues/26925) which gives an error if you try to use .clone() on
+// Result.
 #[cfg(test)]
-mod test {
+pub mod test {
     use ec2_wrapper::Ec2Wrapper;
-    use rusoto_ec2::{DescribeInstancesError, DescribeInstancesRequest, DescribeInstancesResult, StartInstancesError, StartInstancesRequest, StartInstancesResult};
+    use rusoto_ec2::{DescribeInstancesError, DescribeInstancesRequest, DescribeInstancesResult,
+        StartInstancesError, StartInstancesRequest, StartInstancesResult};
 
     type DescribeInstancesLambda = Fn(&DescribeInstancesRequest) -> Result<DescribeInstancesResult, DescribeInstancesError>;
     type StartInstancesLambda = Fn(&StartInstancesRequest) -> Result<StartInstancesResult, StartInstancesError>;
-
+    
+    #[derive(Default)]
     pub struct MockEc2Wrapper<'a> {
-        describe_instances_lambda: &'a mut DescribeInstancesLambda,
-        start_instances_lambda: &'a mut StartInstancesLambda,
+        describe_instances_lambda: Option<&'a DescribeInstancesLambda>,
+        start_instances_lambda: Option<&'a StartInstancesLambda>,
     }
 
     impl <'a> MockEc2Wrapper<'a> {
-        pub fn mock_describe_instances(&mut self, closure: &'a mut DescribeInstancesLambda) {
-            self.describe_instances_lambda = closure;
+        pub fn mock_describe_instances(&mut self, closure: &'a DescribeInstancesLambda) {
+            self.describe_instances_lambda = Some(closure);
         }
 
-        pub fn mock_start_instances(&mut self, closure: &'a mut StartInstancesLambda) {
-            self.start_instances_lambda = closure;
+        pub fn mock_start_instances(&mut self, closure: &'a StartInstancesLambda) {
+            self.start_instances_lambda = Some(closure);
         }
     }
 
@@ -78,13 +86,12 @@ mod test {
         fn describe_instances(&self, input: &DescribeInstancesRequest)
                 -> Result<DescribeInstancesResult, DescribeInstancesError>
         {
-            (self.describe_instances_lambda)(input)
+            (self.describe_instances_lambda.unwrap())(input)
         }
 
-        fn start_instances(&self, input: &StartInstancesRequest)
-            -> Result<StartInstancesResult, StartInstancesError>
+        fn start_instances(&self, input: &StartInstancesRequest) -> Result<StartInstancesResult, StartInstancesError>
         {
-            (self.start_instances_lambda)(input)
+            (self.start_instances_lambda.unwrap())(input)
         }
     }
 }
