@@ -11,6 +11,7 @@ mod ec2_wrapper;
 mod list;
 mod ssh;
 mod start;
+mod stop;
 
 use docopt::Docopt;
 use rusoto_core::Region;
@@ -87,6 +88,9 @@ fn main() {
         }
     }
     else if args.cmd_stop {
-        eprintln!("Unimplemented");
+        debug!("Calling stop::stop");
+        if let Err(error) = stop::stop(&ec2_wrapper, &args.arg_name[0]) {
+            eprintln!("{:?}", error);
+        }
     }
 }

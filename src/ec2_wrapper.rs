@@ -6,13 +6,16 @@ extern crate rusoto_ec2;
 
 use rusoto_core::{default_tls_client, Region};
 use rusoto_credential::{DefaultCredentialsProvider, ProfileProvider};
-use rusoto_ec2::{DescribeInstancesError, DescribeInstancesRequest, DescribeInstancesResult, Ec2, Ec2Client, StartInstancesError, StartInstancesRequest, StartInstancesResult};
+use rusoto_ec2::{DescribeInstancesError, DescribeInstancesRequest, DescribeInstancesResult, Ec2, Ec2Client,
+    StartInstancesError, StartInstancesRequest, StartInstancesResult, StopInstancesError, StopInstancesRequest, StopInstancesResult};
 
 pub trait Ec2Wrapper {
     fn describe_instances(&self, input: &DescribeInstancesRequest)
         -> Result<DescribeInstancesResult, DescribeInstancesError>;
     fn start_instances(&self, input: &StartInstancesRequest)
         -> Result<StartInstancesResult, StartInstancesError>;
+    fn stop_instances(&self, input: &StopInstancesRequest)
+        -> Result<StopInstancesResult, StopInstancesError>;
 }
 
 pub struct AwsEc2Client {
@@ -56,6 +59,12 @@ impl Ec2Wrapper for AwsEc2Client {
     {
         self.ec2.start_instances(input)
     }
+
+    fn stop_instances(&self, input: &StopInstancesRequest)
+        -> Result<StopInstancesResult, StopInstancesError>
+    {
+        self.ec2.stop_instances(input)
+    }
 }
 
 
@@ -66,15 +75,17 @@ impl Ec2Wrapper for AwsEc2Client {
 pub mod test {
     use ec2_wrapper::Ec2Wrapper;
     use rusoto_ec2::{DescribeInstancesError, DescribeInstancesRequest, DescribeInstancesResult,
-        StartInstancesError, StartInstancesRequest, StartInstancesResult};
+        StartInstancesError, StartInstancesRequest, StartInstancesResult, StopInstancesError, StopInstancesRequest, StopInstancesResult};
 
     type DescribeInstancesLambda = Fn(&DescribeInstancesRequest) -> Result<DescribeInstancesResult, DescribeInstancesError>;
     type StartInstancesLambda = Fn(&StartInstancesRequest) -> Result<StartInstancesResult, StartInstancesError>;
+    type StopInstancesLambda = Fn(&StopInstancesRequest) -> Result<StopInstancesResult, StopInstancesError>;
     
     #[derive(Default)]
     pub struct MockEc2Wrapper<'a> {
         describe_instances_lambda: Option<&'a DescribeInstancesLambda>,
         start_instances_lambda: Option<&'a StartInstancesLambda>,
+        stop_instances_lambda: Option<&'a StopInstancesLambda>,
     }
 
     impl <'a> MockEc2Wrapper<'a> {
@@ -84,6 +95,10 @@ pub mod test {
 
         pub fn mock_start_instances(&mut self, closure: &'a StartInstancesLambda) {
             self.start_instances_lambda = Some(closure);
+        }
+
+        pub fn mock_stop_instances(&mut self, closure: &'a StopInstancesLambda) {
+            self.stop_instances_lambda = Some(closure);
         }
     }
 
@@ -97,6 +112,11 @@ pub mod test {
         fn start_instances(&self, input: &StartInstancesRequest) -> Result<StartInstancesResult, StartInstancesError>
         {
             (self.start_instances_lambda.unwrap())(input)
+        }
+
+        fn stop_instances(&self, input: &StopInstancesRequest) -> Result<StopInstancesResult, StopInstancesError>
+        {
+            (self.stop_instances_lambda.unwrap())(input)
         }
     }
 }
