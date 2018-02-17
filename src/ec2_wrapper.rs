@@ -4,8 +4,8 @@ extern crate rusoto_core;
 extern crate rusoto_credential;
 extern crate rusoto_ec2;
 
-use rusoto_core::request::DispatchSignedRequest;
-use rusoto_credential::ProvideAwsCredentials;
+use rusoto_core::{default_tls_client, Region};
+use rusoto_credential::{DefaultCredentialsProvider, ProfileProvider};
 use rusoto_ec2::{DescribeInstancesError, DescribeInstancesRequest, DescribeInstancesResult, Ec2, Ec2Client, StartInstancesError, StartInstancesRequest, StartInstancesResult};
 
 pub trait Ec2Wrapper {
@@ -15,41 +15,46 @@ pub trait Ec2Wrapper {
         -> Result<StartInstancesResult, StartInstancesError>;
 }
 
-pub struct AwsEc2Client<P, D>
-    where
-        P: ProvideAwsCredentials,
-        D: DispatchSignedRequest
-{
-    ec2_client: Ec2Client<P, D>,
+pub struct AwsEc2Client {
+    ec2: Box<Ec2>,
 }
 
-impl <P, D> AwsEc2Client<P, D>
-    where
-        P: ProvideAwsCredentials,
-        D: DispatchSignedRequest
-{
-    pub fn new(ec2_client: Ec2Client<P, D>) -> AwsEc2Client<P, D> {
-        AwsEc2Client {
-            ec2_client: ec2_client,
+impl AwsEc2Client {
+    pub fn new(region: Region, profile: &str) -> AwsEc2Client {
+        debug!("Creating profile provider");
+        let mut profile_provider = ProfileProvider::new().expect("Error creating profile provider");
+        if ! profile.is_empty() {
+            profile_provider.set_profile(profile);
+            AwsEc2Client {
+                ec2: Box::new(Ec2Client::new(
+                    default_tls_client().unwrap(),
+                    profile_provider,
+                    region,
+                )),
+            }
+        } else {
+            AwsEc2Client {
+                ec2: Box::new(Ec2Client::new(
+                    default_tls_client().unwrap(),
+                    DefaultCredentialsProvider::new().unwrap(),
+                    region,
+                )),
+            }
         }
     }
 }
 
-impl <P, D> Ec2Wrapper for AwsEc2Client<P, D>
-    where
-        P: ProvideAwsCredentials,
-        D: DispatchSignedRequest
-{
+impl Ec2Wrapper for AwsEc2Client {
    fn describe_instances(&self, input: &DescribeInstancesRequest)
         -> Result<DescribeInstancesResult, DescribeInstancesError>
     {
-        self.ec2_client.describe_instances(input)
+        self.ec2.describe_instances(input)
     }
 
     fn start_instances(&self, input: &StartInstancesRequest)
         -> Result<StartInstancesResult, StartInstancesError>
     {
-        self.ec2_client.start_instances(input)
+        self.ec2.start_instances(input)
     }
 }
 

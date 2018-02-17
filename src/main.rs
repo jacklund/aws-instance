@@ -13,9 +13,7 @@ mod ssh;
 mod start;
 
 use docopt::Docopt;
-use rusoto_core::{default_tls_client, Region};
-use rusoto_credential::ProfileProvider;
-use rusoto_ec2::Ec2Client;
+use rusoto_core::Region;
 use std::str::FromStr;
 
 const USAGE: &'static str = "
@@ -61,22 +59,11 @@ fn main() {
         DEBUG = args.flag_debug;
     }
 
-    debug!("Creating profile provider");
-    let mut profile_provider = ProfileProvider::new().expect("Error creating profile provider");
-    if ! args.flag_profile.is_empty() {
-        profile_provider.set_profile(args.flag_profile);
-    }
-
     debug!("Parsing region string '{}'", args.flag_region);
     let region = Region::from_str(args.flag_region.as_str()).expect("Error parsing region name");
 
     debug!("Instantiating Ec2Client");
-    let ec2_client = Ec2Client::new(
-        default_tls_client().unwrap(),
-        profile_provider,
-        region,
-    );
-    let ec2_wrapper = ec2_wrapper::AwsEc2Client::new(ec2_client);
+    let ec2_wrapper = ec2_wrapper::AwsEc2Client::new(region, &args.flag_profile);
 
     if args.cmd_create {
         eprintln!("Unimplemented");
