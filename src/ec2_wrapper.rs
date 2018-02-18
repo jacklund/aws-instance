@@ -6,16 +6,15 @@ extern crate rusoto_ec2;
 
 use rusoto_core::{default_tls_client, Region};
 use rusoto_credential::{DefaultCredentialsProvider, ProfileProvider};
-use rusoto_ec2::{DescribeInstancesError, DescribeInstancesRequest, DescribeInstancesResult, Ec2, Ec2Client,
+use rusoto_ec2::{DescribeImagesError, DescribeImagesRequest, DescribeImagesResult,
+    DescribeInstancesError, DescribeInstancesRequest, DescribeInstancesResult, Ec2, Ec2Client,
     StartInstancesError, StartInstancesRequest, StartInstancesResult, StopInstancesError, StopInstancesRequest, StopInstancesResult};
 
 pub trait Ec2Wrapper {
-    fn describe_instances(&self, input: &DescribeInstancesRequest)
-        -> Result<DescribeInstancesResult, DescribeInstancesError>;
-    fn start_instances(&self, input: &StartInstancesRequest)
-        -> Result<StartInstancesResult, StartInstancesError>;
-    fn stop_instances(&self, input: &StopInstancesRequest)
-        -> Result<StopInstancesResult, StopInstancesError>;
+    fn describe_images(&self, input: &DescribeImagesRequest) -> Result<DescribeImagesResult, DescribeImagesError>;
+    fn describe_instances(&self, input: &DescribeInstancesRequest) -> Result<DescribeInstancesResult, DescribeInstancesError>;
+    fn start_instances(&self, input: &StartInstancesRequest) -> Result<StartInstancesResult, StartInstancesError>;
+    fn stop_instances(&self, input: &StopInstancesRequest) -> Result<StopInstancesResult, StopInstancesError>;
 }
 
 pub struct AwsEc2Client {
@@ -48,20 +47,21 @@ impl AwsEc2Client {
 }
 
 impl Ec2Wrapper for AwsEc2Client {
-   fn describe_instances(&self, input: &DescribeInstancesRequest)
-        -> Result<DescribeInstancesResult, DescribeInstancesError>
+    fn describe_images(&self, input: &DescribeImagesRequest) -> Result<DescribeImagesResult, DescribeImagesError> {
+        self.ec2.describe_images(input)
+    }
+
+    fn describe_instances(&self, input: &DescribeInstancesRequest) -> Result<DescribeInstancesResult, DescribeInstancesError>
     {
         self.ec2.describe_instances(input)
     }
 
-    fn start_instances(&self, input: &StartInstancesRequest)
-        -> Result<StartInstancesResult, StartInstancesError>
+    fn start_instances(&self, input: &StartInstancesRequest) -> Result<StartInstancesResult, StartInstancesError>
     {
         self.ec2.start_instances(input)
     }
 
-    fn stop_instances(&self, input: &StopInstancesRequest)
-        -> Result<StopInstancesResult, StopInstancesError>
+    fn stop_instances(&self, input: &StopInstancesRequest) -> Result<StopInstancesResult, StopInstancesError>
     {
         self.ec2.stop_instances(input)
     }
