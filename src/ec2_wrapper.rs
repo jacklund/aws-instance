@@ -75,20 +75,27 @@ impl Ec2Wrapper for AwsEc2Client {
 pub mod test {
     use ec2_wrapper::Ec2Wrapper;
     use rusoto_ec2::{DescribeInstancesError, DescribeInstancesRequest, DescribeInstancesResult,
+        DescribeImagesError, DescribeImagesRequest, DescribeImagesResult,
         StartInstancesError, StartInstancesRequest, StartInstancesResult, StopInstancesError, StopInstancesRequest, StopInstancesResult};
 
+    type DescribeImagesLambda = Fn(&DescribeImagesRequest) -> Result<DescribeImagesResult, DescribeImagesError>;
     type DescribeInstancesLambda = Fn(&DescribeInstancesRequest) -> Result<DescribeInstancesResult, DescribeInstancesError>;
     type StartInstancesLambda = Fn(&StartInstancesRequest) -> Result<StartInstancesResult, StartInstancesError>;
     type StopInstancesLambda = Fn(&StopInstancesRequest) -> Result<StopInstancesResult, StopInstancesError>;
     
     #[derive(Default)]
     pub struct MockEc2Wrapper<'a> {
+        describe_images_lambda: Option<&'a DescribeImagesLambda>,
         describe_instances_lambda: Option<&'a DescribeInstancesLambda>,
         start_instances_lambda: Option<&'a StartInstancesLambda>,
         stop_instances_lambda: Option<&'a StopInstancesLambda>,
     }
 
     impl <'a> MockEc2Wrapper<'a> {
+        pub fn mock_describe_images(&mut self, closure: &'a DescribeImagesLambda) {
+            self.describe_images_lambda = Some(closure);
+        }
+
         pub fn mock_describe_instances(&mut self, closure: &'a DescribeInstancesLambda) {
             self.describe_instances_lambda = Some(closure);
         }
@@ -103,6 +110,10 @@ pub mod test {
     }
 
     impl <'a> Ec2Wrapper for MockEc2Wrapper<'a> {
+        fn describe_images(&self, input: &DescribeImagesRequest) -> Result<DescribeImagesResult, DescribeImagesError> {
+            (self.describe_images_lambda.unwrap())(input)
+        }
+
         fn describe_instances(&self, input: &DescribeInstancesRequest)
                 -> Result<DescribeInstancesResult, DescribeInstancesError>
         {
