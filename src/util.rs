@@ -66,10 +66,12 @@ pub fn get_instance_by_name(ec2_client: &ec2_wrapper::Ec2Wrapper, name: &str) ->
 
     let result = ec2_client.describe_instances(&request)?;
     let reservations = result.reservations.unwrap();
-    let mut instance = None;
-    if ! reservations.is_empty() {
-        instance = Some(reservations[0].clone().instances.unwrap()[0].clone());
-    }
+    let instance = if ! reservations.is_empty() {
+        Some(reservations[0].clone().instances.unwrap()[0].clone())
+    } else {
+        None
+    };
+
     Ok(instance)
 }
 

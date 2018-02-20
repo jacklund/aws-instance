@@ -6,7 +6,7 @@ use std::error::Error;
 use std::process::{Command, exit};
 use super::{ec2_wrapper, util};
 
-pub fn ssh(ec2_client: &ec2_wrapper::Ec2Wrapper, name: &str, ssh_opts: &Vec<&str>) -> Result<(), Box<Error>>
+pub fn ssh(ec2_client: &ec2_wrapper::Ec2Wrapper, name: &str, ssh_opts: &[&str]) -> Result<(), Box<Error>>
 {
     debug!("Calling util::get_instance_by_name({:?})", name);
     let instance = match util::get_instance_by_name(ec2_client, name)? {

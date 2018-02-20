@@ -14,7 +14,7 @@ fn print_option(option: Option<String>) -> String {
     }
 }
 
-pub fn list_amis(ec2_client: &ec2_wrapper::Ec2Wrapper, filter_values: HashMap<String, Vec<String>>) -> Result<(), Box<Error>> {
+pub fn list_amis(ec2_client: &ec2_wrapper::Ec2Wrapper, filter_values: &HashMap<String, Vec<String>>) -> Result<(), Box<Error>> {
     let mut request = DescribeImagesRequest::default();
     if !filter_values.is_empty() {
         let mut filters = vec![];

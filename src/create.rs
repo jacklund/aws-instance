@@ -4,8 +4,7 @@ use super::ec2_wrapper;
 
 pub type CreateOptions = RunInstancesRequest;
 
-pub fn create_instance(ec2_client: &ec2_wrapper::Ec2Wrapper, name: &str, create_options: CreateOptions) -> Result<Reservation, Box<Error>> {
-    let mut request = create_options.clone();
+pub fn create_instance(ec2_client: &ec2_wrapper::Ec2Wrapper, name: &str, mut request: CreateOptions) -> Result<Reservation, Box<Error>> {
     request.min_count = 1;
     request.max_count = 1;
     let name_tag_spec = TagSpecification {

@@ -107,9 +107,9 @@ fn main() {
     let region = Region::from_str(matches.value_of("region").unwrap()).expect("Error parsing region name");
     let profile = matches.value_of("profile").unwrap_or("");
 
-    let ec2_wrapper = ec2_wrapper::AwsEc2Client::new(region, &profile);
+    let ec2_wrapper = ec2_wrapper::AwsEc2Client::new(region, profile);
 
-    if let Some(_) = matches.subcommand_matches("list") {
+    if matches.subcommand_matches("list").is_some() {
         if let Err(error) = list(&ec2_wrapper) {
             eprintln!("{:?}", error);
         }
@@ -117,7 +117,7 @@ fn main() {
         let mut filter_values: HashMap<String, Vec<String>> = HashMap::new();
         if let Some(filters) = matches.values_of("filters") {
             for key_value in filters {
-                let split: Vec<&str> = key_value.split("=").collect();
+                let split: Vec<&str> = key_value.split('=').collect();
                 match split.len() {
                     1 => {
                         eprintln!("Filter value {} doesn't contain an '='", key_value);
@@ -137,12 +137,12 @@ fn main() {
                 }
             }
         }
-        if let Err(error) = list_amis(&ec2_wrapper, filter_values) {
+        if let Err(error) = list_amis(&ec2_wrapper, &filter_values) {
             eprintln!("{:?}", error);
         }
     } else if let Some(matches) = matches.subcommand_matches("ssh") {
         let name = matches.value_of("NAME").unwrap();
-        let sshopts = matches.values_of("sshopts").unwrap_or(clap::Values::default()).collect();
+        let sshopts: Vec<&str> = matches.values_of("sshopts").unwrap_or_default().collect();
         if let Err(error) = ssh(&ec2_wrapper, name, &sshopts) {
             eprintln!("{:?}", error);
         }
