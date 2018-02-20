@@ -1,12 +1,16 @@
 #[macro_use]
-extern crate serde_derive;
-extern crate docopt;
+extern crate clap;
+#[macro_use]
+extern crate log;
+extern crate env_logger;
 extern crate rusoto_core;
 extern crate rusoto_credential;
 extern crate rusoto_ec2;
 
 #[macro_use]
 mod util;
+mod create;
+mod destroy;
 mod ec2_wrapper;
 mod list;
 mod list_amis;
@@ -14,120 +18,154 @@ mod ssh;
 mod start;
 mod stop;
 
-use docopt::Docopt;
+use clap::ArgMatches;
+use rusoto_ec2::IamInstanceProfileSpecification;
 use rusoto_core::Region;
 use std::collections::HashMap;
 use std::process::exit;
 use std::str::FromStr;
 
+use create::{create_instance, CreateOptions};
+use destroy::destroy_instance;
 use list::list;
 use list_amis::list_amis;
 use ssh::ssh;
 use start::start;
 use stop::stop;
 
-const USAGE: &'static str = "
-Manage AWS instances
-
-Usage:
-    aws-instance [options] list
-    aws-instance [options] list-amis [--filter <key>=<value>]...
-    aws-instance [options] create <name>
-    aws-instance [options] start <name>
-    aws-instance [options] ssh <name> [-- <sshopt>...]
-    aws-instance [options] stop <name>
-    aws-instance --help
-
-Options:
-  -h --help                    Show this screen.
-  -d --debug                   Print information about what it's doing
-  -r --region <region>         Set the region [default: us-east-2]
-  -p --profile <profile_name>  Set the profile name to use
-  --filter <key-value>         Filter for AMIs in the form 'key=value'. Keys include 'name', 'platform', 'architecture', and more.
-";
-
 pub static mut DEBUG: bool = false;
 
-#[derive(Debug, Deserialize)]
-struct Args {
-    cmd_list: bool,
-    cmd_create: bool,
-    cmd_start: bool,
-    cmd_ssh: bool,
-    cmd_stop: bool,
-    cmd_list_amis: bool,
-    arg_name: Vec<String>,
-    flag_debug: bool,
-    flag_profile: String,
-    flag_region: String,
-    arg_sshopt: Vec<String>,
-    flag_filter: Vec<String>,
+fn get_create_options(matches: &ArgMatches) -> CreateOptions {
+    let mut ret = CreateOptions::default();
+
+    ret.ebs_optimized = Some(matches.is_present("ebs_optimized"));
+    if let Some(profile) = matches.value_of("iam_instance_profile") {
+        let mut iam_profile_spec = IamInstanceProfileSpecification::default();
+        iam_profile_spec.name = Some(profile.to_string());
+        ret.iam_instance_profile = Some(iam_profile_spec);
+    }
+    if let Some(ami_id) = matches.value_of("AMI_ID") {
+        ret.image_id = ami_id.to_string();
+    }
+    if let Some(instance_type) = matches.value_of("instance_type") {
+        ret.instance_type = Some(instance_type.to_string());
+    }
+    if let Some(keypair_name) = matches.value_of("keypair_name") {
+        ret.key_name = Some(keypair_name.to_string());
+    }
+    if let Some(security_group_ids) = matches.values_of("security_group_ids") {
+        ret.security_group_ids = Some(security_group_ids.map(|s| s.to_string()).collect());
+    }
+
+    ret
 }
 
 fn main() {
-    let args: Args = Docopt::new(USAGE)
-                            .and_then(|d| d.deserialize())
-                            .unwrap_or_else(|e| e.exit());
+    env_logger::init();
 
-    unsafe {
-        DEBUG = args.flag_debug;
-    }
+    let matches = clap_app!(myapp =>
+        (about: "Manage AWS instances")
+        (@arg profile: -p --profile +takes_value "Set the AWS profile to use")
+        (@arg region: -r --region +takes_value +required "Set the AWS region to use")
+        (@arg debug: -d "Turns on debugging")
+        (@subcommand create =>
+            (about: "Create an instance from an AMI")
+            (@arg NAME: +required "Name of the instance")
+            (@arg AMI_ID: +required "The AMI ID")
+            (@arg ebs_optimized: -e --ebs_optimized "Indicates whether the instance is optimized for Amazon EBS I/O")
+            (@arg iam_instance_profile: -i --iam_profile +takes_value "The IAM instance profile")
+            (@arg instance_type: -t --instance_type +takes_value "The EC2 instance type")
+            (@arg keypair_name: -k --keypair +required +takes_value "The keypair name")
+            (@arg security_group_ids: -s... --security_group_id +required +takes_value "Security group ids")
+        )
+        (@subcommand destroy =>
+            (about: "Destroy an instance")
+            (@arg NAME: +required "Name of the instance")
+        )
+        (@subcommand list =>
+            (about: "List the instances you currently have")
+        )
+        (@subcommand list_amis =>
+            (about: "List AMIs based on a filter")
+            (@arg filters: -f... --filter +takes_value "Filter for AMIs")
+        )
+        (@subcommand ssh =>
+            (about: "SSH into an instance")
+            (@arg NAME: +required "Name of the instance")
+            (@arg sshopts: +multiple "SSH options")
+        )
+        (@subcommand start =>
+            (about: "Start an instance")
+            (@arg NAME: +required "Name of the instance")
+        )
+        (@subcommand stop =>
+            (about: "Stop an instance")
+            (@arg NAME: +required "Name of the instance")
+        )
+    ).name(crate_name!()).get_matches();
 
-    debug!("Parsing region string '{}'", args.flag_region);
-    let region = Region::from_str(args.flag_region.as_str()).expect("Error parsing region name");
+    let region = Region::from_str(matches.value_of("region").unwrap()).expect("Error parsing region name");
+    let profile = matches.value_of("profile").unwrap_or("");
 
-    debug!("Instantiating Ec2Client");
-    let ec2_wrapper = ec2_wrapper::AwsEc2Client::new(region, &args.flag_profile);
+    let ec2_wrapper = ec2_wrapper::AwsEc2Client::new(region, &profile);
 
-    if args.cmd_create {
-        eprintln!("Unimplemented");
-    }
-    else if args.cmd_list {
-        debug!("Calling list::list");
+    if let Some(_) = matches.subcommand_matches("list") {
         if let Err(error) = list(&ec2_wrapper) {
             eprintln!("{:?}", error);
         }
-    }
-    else if args.cmd_ssh {
-        debug!("Calling ssh::ssh");
-        if let Err(error) = ssh(&ec2_wrapper, &args.arg_name[0], &args.arg_sshopt) {
-            eprintln!("{:?}", error);
-        }
-    }
-    else if args.cmd_start {
-        debug!("Calling start::start");
-        if let Err(error) = start(&ec2_wrapper, &args.arg_name[0]) {
-            eprintln!("{:?}", error);
-        }
-    }
-    else if args.cmd_stop {
-        debug!("Calling stop::stop");
-        if let Err(error) = stop(&ec2_wrapper, &args.arg_name[0]) {
-            eprintln!("{:?}", error);
-        }
-    }
-    else if args.cmd_list_amis {
+    } else if let Some(matches) = matches.subcommand_matches("list_amis") {
         let mut filter_values: HashMap<String, Vec<String>> = HashMap::new();
-        for key_value in args.flag_filter {
-            let split: Vec<&str> = key_value.split("=").collect();
-            match split.len() {
-                1 => {
-                    eprintln!("Filter value {} doesn't contain an '='", key_value);
-                    exit(1);
-                },
-                2 => {
-                    if filter_values.contains_key(split[0]) {
-                        filter_values.get_mut(split[0]).unwrap().push(split[1].to_string());
-                    } else {
-                        filter_values.insert(split[0].to_string(), vec![split[1].to_string()]);
+        if let Some(filters) = matches.values_of("filters") {
+            for key_value in filters {
+                let split: Vec<&str> = key_value.split("=").collect();
+                match split.len() {
+                    1 => {
+                        eprintln!("Filter value {} doesn't contain an '='", key_value);
+                        exit(1);
+                    },
+                    2 => {
+                        if filter_values.contains_key(split[0]) {
+                            filter_values.get_mut(split[0]).unwrap().push(split[1].to_string());
+                        } else {
+                            filter_values.insert(split[0].to_string(), vec![split[1].to_string()]);
+                        }
+                    },
+                    _ => {
+                        eprintln!("Filter value {} contains too many '='s", key_value);
+                        exit(1);
                     }
-                },
-                _ => {
-                    eprintln!("Filter value {} contains too many '='s", key_value);
-                    exit(1);
                 }
             }
         }
-        list_amis(&ec2_wrapper, filter_values);
+        if let Err(error) = list_amis(&ec2_wrapper, filter_values) {
+            eprintln!("{:?}", error);
+        }
+    } else if let Some(matches) = matches.subcommand_matches("ssh") {
+        let name = matches.value_of("NAME").unwrap();
+        let sshopts = matches.values_of("sshopts").unwrap_or(clap::Values::default()).collect();
+        if let Err(error) = ssh(&ec2_wrapper, name, &sshopts) {
+            eprintln!("{:?}", error);
+        }
+    } else if let Some(matches) = matches.subcommand_matches("start") {
+        let name = matches.value_of("NAME").unwrap();
+        if let Err(error) = start(&ec2_wrapper, name) {
+            eprintln!("{:?}", error);
+        }
+    } else if let Some(matches) = matches.subcommand_matches("stop") {
+        let name = matches.value_of("NAME").unwrap();
+        if let Err(error) = stop(&ec2_wrapper, name) {
+            eprintln!("{:?}", error);
+        }
+    } else if let Some(matches) = matches.subcommand_matches("create") {
+        let name = matches.value_of("NAME").unwrap();
+        let create_options = get_create_options(matches);
+        if let Err(error) = create_instance(&ec2_wrapper, name, create_options) {
+            eprintln!("{:?}", error);
+        }
+    } else if let Some(matches) = matches.subcommand_matches("destroy") {
+        let name = matches.value_of("NAME").unwrap();
+        if let Err(error) = destroy_instance(&ec2_wrapper, name) {
+            eprintln!("{:?}", error);
+        }
     }
 }

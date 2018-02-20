@@ -1,6 +1,6 @@
 use rusoto_ec2::{DescribeImagesRequest, Filter};
 use std::collections::HashMap;
-use std::process::exit;
+use std::error::Error;
 use super::ec2_wrapper;
 
 fn print_option(option: Option<String>) -> String {
@@ -14,7 +14,7 @@ fn print_option(option: Option<String>) -> String {
     }
 }
 
-pub fn list_amis(ec2_client: &ec2_wrapper::Ec2Wrapper, filter_values: HashMap<String, Vec<String>>) {
+pub fn list_amis(ec2_client: &ec2_wrapper::Ec2Wrapper, filter_values: HashMap<String, Vec<String>>) -> Result<(), Box<Error>> {
     let mut request = DescribeImagesRequest::default();
     if !filter_values.is_empty() {
         let mut filters = vec![];
@@ -27,29 +27,23 @@ pub fn list_amis(ec2_client: &ec2_wrapper::Ec2Wrapper, filter_values: HashMap<St
         request.filters = Some(filters);
     }
 
-    match ec2_client.describe_images(&request) {
-        Ok(result) => {
-            match result.images {
-                Some(images) => {
-                    println!("{0: <15} {1: <15} {2: <25} {3: <50.48} {4: <25}",
-                        "AMI ID", "State", "Creation Date", "Name", "Description");
-                    for image in images {
-                        println!("{0: <15} {1: <15} {2: <25} {3: <50.48} {4: <25}",
-                            print_option(image.image_id),
-                            print_option(image.state),
-                            print_option(image.creation_date),
-                            print_option(image.name),
-                            print_option(image.description));
-                    }
-                },
-                None => {
-                    println!("No images found");
-                }
+    match ec2_client.describe_images(&request)?.images {
+        Some(images) => {
+            println!("{0: <15} {1: <15} {2: <25} {3: <50.48} {4: <25}",
+                "AMI ID", "State", "Creation Date", "Name", "Description");
+            for image in images {
+                println!("{0: <15} {1: <15} {2: <25} {3: <50.48} {4: <25}",
+                    print_option(image.image_id),
+                    print_option(image.state),
+                    print_option(image.creation_date),
+                    print_option(image.name),
+                    print_option(image.description));
             }
         },
-        Err(error) => {
-            eprintln!("{:?}", error);
-            exit(1);
-        },
-    }
+        None => {
+            println!("No images found");
+        }
+    };
+
+    Ok(())
 }
