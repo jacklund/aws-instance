@@ -32,7 +32,7 @@ pub fn get_name(instance: &rusoto_ec2::Instance) -> String {
                     }
                 }
             }
-        },
+        }
         None => return String::new(),
     }
 
@@ -41,11 +41,9 @@ pub fn get_name(instance: &rusoto_ec2::Instance) -> String {
 
 pub fn get_state(instance: &rusoto_ec2::Instance) -> String {
     match instance.state {
-        Some(ref state) => {
-            match state.name {
-                Some(ref state_name) => state_name.to_string(),
-                None => String::new(),
-            }
+        Some(ref state) => match state.name {
+            Some(ref state_name) => state_name.to_string(),
+            None => String::new(),
         },
         None => String::new(),
     }
@@ -55,8 +53,10 @@ pub fn get_public_ip_address(instance: &rusoto_ec2::Instance) -> Option<String> 
     instance.public_ip_address.clone()
 }
 
-pub fn get_instance_by_name(ec2_client: &ec2_wrapper::Ec2Wrapper, name: &str) -> Result<Option<rusoto_ec2::Instance>, rusoto_ec2::DescribeInstancesError>
-{
+pub fn get_instance_by_name(
+    ec2_client: &ec2_wrapper::Ec2Wrapper,
+    name: &str,
+) -> Result<Option<rusoto_ec2::Instance>, rusoto_ec2::DescribeInstancesError> {
     let mut request = rusoto_ec2::DescribeInstancesRequest::default();
     let filter = rusoto_ec2::Filter {
         name: Some("tag:Name".to_string()),
@@ -66,7 +66,7 @@ pub fn get_instance_by_name(ec2_client: &ec2_wrapper::Ec2Wrapper, name: &str) ->
 
     let result = ec2_client.describe_instances(&request)?;
     let reservations = result.reservations.unwrap();
-    let instance = if ! reservations.is_empty() {
+    let instance = if !reservations.is_empty() {
         Some(reservations[0].clone().instances.unwrap()[0].clone())
     } else {
         None
@@ -75,8 +75,9 @@ pub fn get_instance_by_name(ec2_client: &ec2_wrapper::Ec2Wrapper, name: &str) ->
     Ok(instance)
 }
 
-pub fn get_all_instances(ec2_client: &ec2_wrapper::Ec2Wrapper) -> Result<Vec<rusoto_ec2::Instance>, rusoto_ec2::DescribeInstancesError>
-{
+pub fn get_all_instances(
+    ec2_client: &ec2_wrapper::Ec2Wrapper,
+) -> Result<Vec<rusoto_ec2::Instance>, rusoto_ec2::DescribeInstancesError> {
     let request = rusoto_ec2::DescribeInstancesRequest {
         dry_run: Some(false),
         filters: None,
@@ -103,9 +104,11 @@ pub fn get_all_instances(ec2_client: &ec2_wrapper::Ec2Wrapper) -> Result<Vec<rus
 
 #[cfg(test)]
 mod test {
-    use ec2_wrapper::test::MockEc2Wrapper;
-    use rusoto_ec2::{DescribeInstancesRequest, DescribeInstancesResult, Instance, Reservation, Tag};
     use super::{get_all_instances, get_instance_by_name};
+    use ec2_wrapper::test::MockEc2Wrapper;
+    use rusoto_ec2::{
+        DescribeInstancesRequest, DescribeInstancesResult, Instance, Reservation, Tag,
+    };
 
     #[test]
     fn get_all_no_instances_found() {

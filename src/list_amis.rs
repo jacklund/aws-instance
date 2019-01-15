@@ -1,20 +1,19 @@
+use super::ec2_wrapper;
 use rusoto_ec2::{DescribeImagesRequest, Filter};
 use std::collections::HashMap;
 use std::error::Error;
-use super::ec2_wrapper;
 
 fn print_option(option: Option<String>) -> String {
     match option {
-        Some(string) => {
-            string.to_string()
-        },
-        None => {
-            "".to_string()
-        }
+        Some(string) => string.to_string(),
+        None => "".to_string(),
     }
 }
 
-pub fn list_amis(ec2_client: &ec2_wrapper::Ec2Wrapper, filter_values: &HashMap<String, Vec<String>>) -> Result<(), Box<Error>> {
+pub fn list_amis(
+    ec2_client: &ec2_wrapper::Ec2Wrapper,
+    filter_values: &HashMap<String, Vec<String>>,
+) -> Result<(), Box<Error>> {
     let mut request = DescribeImagesRequest::default();
     if !filter_values.is_empty() {
         let mut filters = vec![];
@@ -29,17 +28,21 @@ pub fn list_amis(ec2_client: &ec2_wrapper::Ec2Wrapper, filter_values: &HashMap<S
 
     match ec2_client.describe_images(&request)?.images {
         Some(images) => {
-            println!("{0: <15} {1: <15} {2: <25} {3: <50.48} {4: <25}",
-                "AMI ID", "State", "Creation Date", "Name", "Description");
+            println!(
+                "{0: <15} {1: <15} {2: <25} {3: <50.48} {4: <25}",
+                "AMI ID", "State", "Creation Date", "Name", "Description"
+            );
             for image in images {
-                println!("{0: <15} {1: <15} {2: <25} {3: <50.48} {4: <25}",
+                println!(
+                    "{0: <15} {1: <15} {2: <25} {3: <50.48} {4: <25}",
                     print_option(image.image_id),
                     print_option(image.state),
                     print_option(image.creation_date),
                     print_option(image.name),
-                    print_option(image.description));
+                    print_option(image.description)
+                );
             }
-        },
+        }
         None => {
             println!("No images found");
         }

@@ -1,10 +1,9 @@
 extern crate rusoto_ec2;
 
-use std::error::Error;
 use super::{ec2_wrapper, util};
+use std::error::Error;
 
-pub fn stop(ec2_client: &ec2_wrapper::Ec2Wrapper, name: &str) -> Result<(), Box<Error>>
-{
+pub fn stop(ec2_client: &ec2_wrapper::Ec2Wrapper, name: &str) -> Result<(), Box<Error>> {
     debug!("Calling get_instance_by_name({:?})", name);
     match util::get_instance_by_name(ec2_client, name)? {
         Some(instance) => {
@@ -16,12 +15,17 @@ pub fn stop(ec2_client: &ec2_wrapper::Ec2Wrapper, name: &str) -> Result<(), Box<
             let result = ec2_client.stop_instances(&request)?;
             if let Some(state_changes) = result.stopping_instances {
                 for state_change in state_changes {
-                    println!("{}: {} => {}", state_change.instance_id.unwrap(), state_change.previous_state.unwrap().name.unwrap(), state_change.current_state.unwrap().name.unwrap());
+                    println!(
+                        "{}: {} => {}",
+                        state_change.instance_id.unwrap(),
+                        state_change.previous_state.unwrap().name.unwrap(),
+                        state_change.current_state.unwrap().name.unwrap()
+                    );
                 }
             } else {
                 println!("No state change returned");
             }
-        },
+        }
         None => eprintln!("No instance named '{}' found", name),
     }
     Ok(())

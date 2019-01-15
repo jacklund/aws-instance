@@ -19,8 +19,8 @@ mod start;
 mod stop;
 
 use clap::ArgMatches;
-use rusoto_ec2::IamInstanceProfileSpecification;
 use rusoto_core::Region;
+use rusoto_ec2::IamInstanceProfileSpecification;
 use std::collections::HashMap;
 use std::process::exit;
 use std::str::FromStr;
@@ -104,7 +104,8 @@ fn main() {
         )
     ).name(crate_name!()).get_matches();
 
-    let region = Region::from_str(matches.value_of("region").unwrap()).expect("Error parsing region name");
+    let region =
+        Region::from_str(matches.value_of("region").unwrap()).expect("Error parsing region name");
     let profile = matches.value_of("profile").unwrap_or("");
 
     let ec2_wrapper = ec2_wrapper::AwsEc2Client::new(region, profile);
@@ -122,14 +123,17 @@ fn main() {
                     1 => {
                         eprintln!("Filter value {} doesn't contain an '='", key_value);
                         exit(1);
-                    },
+                    }
                     2 => {
                         if filter_values.contains_key(split[0]) {
-                            filter_values.get_mut(split[0]).unwrap().push(split[1].to_string());
+                            filter_values
+                                .get_mut(split[0])
+                                .unwrap()
+                                .push(split[1].to_string());
                         } else {
                             filter_values.insert(split[0].to_string(), vec![split[1].to_string()]);
                         }
-                    },
+                    }
                     _ => {
                         eprintln!("Filter value {} contains too many '='s", key_value);
                         exit(1);

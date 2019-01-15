@@ -1,10 +1,14 @@
+use super::ec2_wrapper;
 use rusoto_ec2::{Reservation, RunInstancesRequest, Tag, TagSpecification};
 use std::error::Error;
-use super::ec2_wrapper;
 
 pub type CreateOptions = RunInstancesRequest;
 
-pub fn create_instance(ec2_client: &ec2_wrapper::Ec2Wrapper, name: &str, mut request: CreateOptions) -> Result<Reservation, Box<Error>> {
+pub fn create_instance(
+    ec2_client: &ec2_wrapper::Ec2Wrapper,
+    name: &str,
+    mut request: CreateOptions,
+) -> Result<Reservation, Box<Error>> {
     request.min_count = 1;
     request.max_count = 1;
     let name_tag_spec = TagSpecification {
@@ -19,10 +23,10 @@ pub fn create_instance(ec2_client: &ec2_wrapper::Ec2Wrapper, name: &str, mut req
             let mut my_tag_spec = tag_spec.clone();
             my_tag_spec.push(name_tag_spec);
             request.tag_specifications = Some(my_tag_spec);
-        },
+        }
         None => {
             request.tag_specifications = Some(vec![name_tag_spec]);
-        },
+        }
     }
     if request.instance_type.is_none() {
         request.instance_type = Some("t2.micro".to_string());
