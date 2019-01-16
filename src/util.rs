@@ -64,7 +64,7 @@ pub fn get_instance_by_name(
     };
     request.filters = Some(vec![filter]);
 
-    let result = ec2_client.describe_instances(&request)?;
+    let result = ec2_client.describe_instances(request)?;
     let reservations = result.reservations.unwrap();
     let instance = if !reservations.is_empty() {
         Some(reservations[0].clone().instances.unwrap()[0].clone())
@@ -88,7 +88,7 @@ pub fn get_all_instances(
 
     let mut instances = Vec::new();
 
-    let result = ec2_client.describe_instances(&request)?;
+    let result = ec2_client.describe_instances(request)?;
     if result.reservations.is_some() {
         for reservation in result.reservations.unwrap() {
             if reservation.instances.is_some() {
@@ -106,15 +106,13 @@ pub fn get_all_instances(
 mod test {
     use super::{get_all_instances, get_instance_by_name};
     use ec2_wrapper::test::MockEc2Wrapper;
-    use rusoto_ec2::{
-        DescribeInstancesRequest, DescribeInstancesResult, Instance, Reservation, Tag,
-    };
+    use rusoto_ec2::{DescribeInstancesRequest, DescribeInstancesResult, Instance, Reservation};
 
     #[test]
     fn get_all_no_instances_found() {
         let mut good_result = DescribeInstancesResult::default();
         good_result.reservations = Some(vec![]);
-        let good_lambda = move |_: &DescribeInstancesRequest| Ok(good_result.clone());
+        let good_lambda = move |_: DescribeInstancesRequest| Ok(good_result.clone());
         let mut ec2_client = MockEc2Wrapper::default();
         ec2_client.mock_describe_instances(&good_lambda);
         assert!(get_all_instances(&ec2_client).unwrap().is_empty());
@@ -126,7 +124,7 @@ mod test {
         let mut reservation = Reservation::default();
         reservation.instances = Some(vec![Instance::default()]);
         good_result.reservations = Some(vec![reservation]);
-        let good_lambda = move |_: &DescribeInstancesRequest| Ok(good_result.clone());
+        let good_lambda = move |_: DescribeInstancesRequest| Ok(good_result.clone());
         let mut ec2_client = MockEc2Wrapper::default();
         ec2_client.mock_describe_instances(&good_lambda);
         assert!(get_all_instances(&ec2_client).unwrap().len() == 1);
@@ -138,7 +136,7 @@ mod test {
         let mut reservation = Reservation::default();
         reservation.instances = Some(vec![Instance::default(), Instance::default()]);
         good_result.reservations = Some(vec![reservation]);
-        let good_lambda = move |_: &DescribeInstancesRequest| Ok(good_result.clone());
+        let good_lambda = move |_: DescribeInstancesRequest| Ok(good_result.clone());
         let mut ec2_client = MockEc2Wrapper::default();
         ec2_client.mock_describe_instances(&good_lambda);
         assert!(get_all_instances(&ec2_client).unwrap().len() == 2);
@@ -152,7 +150,7 @@ mod test {
         let mut reservation2 = Reservation::default();
         reservation2.instances = Some(vec![Instance::default()]);
         good_result.reservations = Some(vec![reservation1, reservation2]);
-        let good_lambda = move |_: &DescribeInstancesRequest| Ok(good_result.clone());
+        let good_lambda = move |_: DescribeInstancesRequest| Ok(good_result.clone());
         let mut ec2_client = MockEc2Wrapper::default();
         ec2_client.mock_describe_instances(&good_lambda);
         assert!(get_all_instances(&ec2_client).unwrap().len() == 2);
@@ -162,7 +160,7 @@ mod test {
     fn get_by_name_no_instances_found() {
         let mut good_result = DescribeInstancesResult::default();
         good_result.reservations = Some(vec![]);
-        let good_lambda = move |_: &DescribeInstancesRequest| Ok(good_result.clone());
+        let good_lambda = move |_: DescribeInstancesRequest| Ok(good_result.clone());
         let mut ec2_client = MockEc2Wrapper::default();
         ec2_client.mock_describe_instances(&good_lambda);
         assert!(get_instance_by_name(&ec2_client, "Foo").unwrap().is_none());
@@ -174,7 +172,7 @@ mod test {
         let mut reservation = Reservation::default();
         reservation.instances = Some(vec![Instance::default()]);
         good_result.reservations = Some(vec![reservation]);
-        let good_lambda = move |_: &DescribeInstancesRequest| Ok(good_result.clone());
+        let good_lambda = move |_: DescribeInstancesRequest| Ok(good_result.clone());
         let mut ec2_client = MockEc2Wrapper::default();
         ec2_client.mock_describe_instances(&good_lambda);
         assert!(get_instance_by_name(&ec2_client, "Foo").unwrap().is_some());

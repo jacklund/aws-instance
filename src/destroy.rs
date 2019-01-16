@@ -12,7 +12,7 @@ pub fn destroy_instance(
             let mut request = rusoto_ec2::TerminateInstancesRequest::default();
             request.instance_ids = vec![instance_id];
 
-            let result = ec2_client.terminate_instances(&request)?;
+            let result = ec2_client.terminate_instances(request)?;
             if let Some(state_changes) = result.terminating_instances {
                 for state_change in state_changes {
                     println!(

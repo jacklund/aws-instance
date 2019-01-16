@@ -26,7 +26,7 @@ pub fn list_amis(
         request.filters = Some(filters);
     }
 
-    match ec2_client.describe_images(&request)?.images {
+    match ec2_client.describe_images(request)?.images {
         Some(images) => {
             println!(
                 "{0: <15} {1: <15} {2: <25} {3: <50.48} {4: <25}",

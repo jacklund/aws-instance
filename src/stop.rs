@@ -12,7 +12,7 @@ pub fn stop(ec2_client: &ec2_wrapper::Ec2Wrapper, name: &str) -> Result<(), Box<
             request.instance_ids = vec![instance_id];
 
             debug!("Calling stop_instances");
-            let result = ec2_client.stop_instances(&request)?;
+            let result = ec2_client.stop_instances(request)?;
             if let Some(state_changes) = result.stopping_instances {
                 for state_change in state_changes {
                     println!(

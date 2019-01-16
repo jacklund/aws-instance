@@ -45,7 +45,7 @@ fn get_create_options(matches: &ArgMatches) -> CreateOptions {
         ret.iam_instance_profile = Some(iam_profile_spec);
     }
     if let Some(ami_id) = matches.value_of("AMI_ID") {
-        ret.image_id = ami_id.to_string();
+        ret.image_id = Some(ami_id.to_string());
     }
     if let Some(instance_type) = matches.value_of("instance_type") {
         ret.instance_type = Some(instance_type.to_string());

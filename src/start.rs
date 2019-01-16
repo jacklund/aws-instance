@@ -12,7 +12,7 @@ pub fn start(ec2_client: &ec2_wrapper::Ec2Wrapper, name: &str) -> Result<(), Box
             request.instance_ids = vec![instance_id];
 
             debug!("Calling start_instances");
-            let result = ec2_client.start_instances(&request)?;
+            let result = ec2_client.start_instances(request)?;
             if let Some(state_changes) = result.starting_instances {
                 for state_change in state_changes {
                     println!(

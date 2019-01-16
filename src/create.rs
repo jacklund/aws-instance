@@ -31,5 +31,5 @@ pub fn create_instance(
     if request.instance_type.is_none() {
         request.instance_type = Some("t2.micro".to_string());
     }
-    Ok(ec2_client.run_instances(&request)?)
+    Ok(ec2_client.run_instances(request)?)
 }

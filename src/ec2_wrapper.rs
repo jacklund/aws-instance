@@ -4,7 +4,7 @@ extern crate rusoto_core;
 extern crate rusoto_credential;
 extern crate rusoto_ec2;
 
-use rusoto_core::{default_tls_client, Region};
+use rusoto_core::{HttpClient, Region};
 use rusoto_credential::{DefaultCredentialsProvider, ProfileProvider};
 use rusoto_ec2::{
     DescribeImagesError, DescribeImagesRequest, DescribeImagesResult, DescribeInstancesError,
@@ -17,24 +17,24 @@ use rusoto_ec2::{
 pub trait Ec2Wrapper {
     fn describe_images(
         &self,
-        input: &DescribeImagesRequest,
+        input: DescribeImagesRequest,
     ) -> Result<DescribeImagesResult, DescribeImagesError>;
     fn describe_instances(
         &self,
-        input: &DescribeInstancesRequest,
+        input: DescribeInstancesRequest,
     ) -> Result<DescribeInstancesResult, DescribeInstancesError>;
-    fn run_instances(&self, input: &RunInstancesRequest) -> Result<Reservation, RunInstancesError>;
+    fn run_instances(&self, input: RunInstancesRequest) -> Result<Reservation, RunInstancesError>;
     fn start_instances(
         &self,
-        input: &StartInstancesRequest,
+        input: StartInstancesRequest,
     ) -> Result<StartInstancesResult, StartInstancesError>;
     fn stop_instances(
         &self,
-        input: &StopInstancesRequest,
+        input: StopInstancesRequest,
     ) -> Result<StopInstancesResult, StopInstancesError>;
     fn terminate_instances(
         &self,
-        input: &TerminateInstancesRequest,
+        input: TerminateInstancesRequest,
     ) -> Result<TerminateInstancesResult, TerminateInstancesError>;
 }
 
@@ -49,16 +49,16 @@ impl AwsEc2Client {
         if !profile.is_empty() {
             profile_provider.set_profile(profile);
             AwsEc2Client {
-                ec2: Box::new(Ec2Client::new(
-                    default_tls_client().unwrap(),
+                ec2: Box::new(Ec2Client::new_with(
+                    HttpClient::new().unwrap(),
                     profile_provider,
                     region,
                 )),
             }
         } else {
             AwsEc2Client {
-                ec2: Box::new(Ec2Client::new(
-                    default_tls_client().unwrap(),
+                ec2: Box::new(Ec2Client::new_with(
+                    HttpClient::new().unwrap(),
                     DefaultCredentialsProvider::new().unwrap(),
                     region,
                 )),
@@ -70,41 +70,41 @@ impl AwsEc2Client {
 impl Ec2Wrapper for AwsEc2Client {
     fn describe_images(
         &self,
-        input: &DescribeImagesRequest,
+        input: DescribeImagesRequest,
     ) -> Result<DescribeImagesResult, DescribeImagesError> {
-        self.ec2.describe_images(input)
+        self.ec2.describe_images(input).sync()
     }
 
     fn describe_instances(
         &self,
-        input: &DescribeInstancesRequest,
+        input: DescribeInstancesRequest,
     ) -> Result<DescribeInstancesResult, DescribeInstancesError> {
-        self.ec2.describe_instances(input)
+        self.ec2.describe_instances(input).sync()
     }
 
-    fn run_instances(&self, input: &RunInstancesRequest) -> Result<Reservation, RunInstancesError> {
-        self.ec2.run_instances(input)
+    fn run_instances(&self, input: RunInstancesRequest) -> Result<Reservation, RunInstancesError> {
+        self.ec2.run_instances(input).sync()
     }
 
     fn start_instances(
         &self,
-        input: &StartInstancesRequest,
+        input: StartInstancesRequest,
     ) -> Result<StartInstancesResult, StartInstancesError> {
-        self.ec2.start_instances(input)
+        self.ec2.start_instances(input).sync()
     }
 
     fn stop_instances(
         &self,
-        input: &StopInstancesRequest,
+        input: StopInstancesRequest,
     ) -> Result<StopInstancesResult, StopInstancesError> {
-        self.ec2.stop_instances(input)
+        self.ec2.stop_instances(input).sync()
     }
 
     fn terminate_instances(
         &self,
-        input: &TerminateInstancesRequest,
+        input: TerminateInstancesRequest,
     ) -> Result<TerminateInstancesResult, TerminateInstancesError> {
-        self.ec2.terminate_instances(input)
+        self.ec2.terminate_instances(input).sync()
     }
 }
 
@@ -116,23 +116,23 @@ pub mod test {
     use ec2_wrapper::Ec2Wrapper;
     use rusoto_ec2::{
         DescribeImagesError, DescribeImagesRequest, DescribeImagesResult, DescribeInstancesError,
-        DescribeInstancesRequest, DescribeInstancesResult, Ec2, Ec2Client, Reservation,
-        RunInstancesError, RunInstancesRequest, StartInstancesError, StartInstancesRequest,
-        StartInstancesResult, StopInstancesError, StopInstancesRequest, StopInstancesResult,
-        TerminateInstancesError, TerminateInstancesRequest, TerminateInstancesResult,
+        DescribeInstancesRequest, DescribeInstancesResult, Reservation, RunInstancesError,
+        RunInstancesRequest, StartInstancesError, StartInstancesRequest, StartInstancesResult,
+        StopInstancesError, StopInstancesRequest, StopInstancesResult, TerminateInstancesError,
+        TerminateInstancesRequest, TerminateInstancesResult,
     };
 
     type DescribeImagesLambda =
-        Fn(&DescribeImagesRequest) -> Result<DescribeImagesResult, DescribeImagesError>;
+        Fn(DescribeImagesRequest) -> Result<DescribeImagesResult, DescribeImagesError>;
     type DescribeInstancesLambda =
-        Fn(&DescribeInstancesRequest) -> Result<DescribeInstancesResult, DescribeInstancesError>;
-    type RunInstancesLambda = Fn(&RunInstancesRequest) -> Result<Reservation, RunInstancesError>;
+        Fn(DescribeInstancesRequest) -> Result<DescribeInstancesResult, DescribeInstancesError>;
+    type RunInstancesLambda = Fn(RunInstancesRequest) -> Result<Reservation, RunInstancesError>;
     type StartInstancesLambda =
-        Fn(&StartInstancesRequest) -> Result<StartInstancesResult, StartInstancesError>;
+        Fn(StartInstancesRequest) -> Result<StartInstancesResult, StartInstancesError>;
     type StopInstancesLambda =
-        Fn(&StopInstancesRequest) -> Result<StopInstancesResult, StopInstancesError>;
+        Fn(StopInstancesRequest) -> Result<StopInstancesResult, StopInstancesError>;
     type TerminateInstancesLambda =
-        Fn(&TerminateInstancesRequest) -> Result<TerminateInstancesResult, TerminateInstancesError>;
+        Fn(TerminateInstancesRequest) -> Result<TerminateInstancesResult, TerminateInstancesError>;
 
     #[derive(Default)]
     pub struct MockEc2Wrapper<'a> {
@@ -173,42 +173,42 @@ pub mod test {
     impl<'a> Ec2Wrapper for MockEc2Wrapper<'a> {
         fn describe_images(
             &self,
-            input: &DescribeImagesRequest,
+            input: DescribeImagesRequest,
         ) -> Result<DescribeImagesResult, DescribeImagesError> {
             (self.describe_images_lambda.unwrap())(input)
         }
 
         fn describe_instances(
             &self,
-            input: &DescribeInstancesRequest,
+            input: DescribeInstancesRequest,
         ) -> Result<DescribeInstancesResult, DescribeInstancesError> {
             (self.describe_instances_lambda.unwrap())(input)
         }
 
         fn run_instances(
             &self,
-            input: &RunInstancesRequest,
+            input: RunInstancesRequest,
         ) -> Result<Reservation, RunInstancesError> {
             (self.run_instances_lambda.unwrap())(input)
         }
 
         fn start_instances(
             &self,
-            input: &StartInstancesRequest,
+            input: StartInstancesRequest,
         ) -> Result<StartInstancesResult, StartInstancesError> {
             (self.start_instances_lambda.unwrap())(input)
         }
 
         fn stop_instances(
             &self,
-            input: &StopInstancesRequest,
+            input: StopInstancesRequest,
         ) -> Result<StopInstancesResult, StopInstancesError> {
             (self.stop_instances_lambda.unwrap())(input)
         }
 
         fn terminate_instances(
             &self,
-            input: &TerminateInstancesRequest,
+            input: TerminateInstancesRequest,
         ) -> Result<TerminateInstancesResult, TerminateInstancesError> {
             (self.terminate_instances_lambda.unwrap())(input)
         }
