@@ -2,10 +2,14 @@
 extern crate clap;
 #[macro_use]
 extern crate log;
+extern crate dirs;
 extern crate env_logger;
+extern crate regex;
 extern crate rusoto_core;
 extern crate rusoto_credential;
 extern crate rusoto_ec2;
+#[macro_use]
+extern crate lazy_static;
 
 #[macro_use]
 mod util;
@@ -14,6 +18,7 @@ mod destroy;
 mod ec2_wrapper;
 mod list;
 mod list_amis;
+mod profile;
 mod ssh;
 mod start;
 mod stop;
@@ -29,6 +34,7 @@ use create::{create_instance, CreateOptions};
 use destroy::destroy_instance;
 use list::list;
 use list_amis::list_amis;
+use profile::Profile;
 use ssh::ssh;
 use start::start;
 use stop::stop;
@@ -66,7 +72,7 @@ fn main() {
     let matches = clap_app!(myapp =>
         (about: "Manage AWS instances")
         (@arg profile: -p --profile +takes_value "Set the AWS profile to use")
-        (@arg region: -r --region +takes_value +required "Set the AWS region to use")
+        (@arg region: -r --region +takes_value "Set the AWS region to use")
         (@arg debug: -d "Turns on debugging")
         (@subcommand create =>
             (about: "Create an instance from an AMI")
@@ -104,11 +110,15 @@ fn main() {
         )
     ).name(crate_name!()).get_matches();
 
-    let region =
-        Region::from_str(matches.value_of("region").unwrap()).expect("Error parsing region name");
-    let profile = matches.value_of("profile").unwrap_or("");
+    let profile_name = matches.value_of("profile").or(Some("default")).unwrap();
+    let profile = Profile::get(profile_name)
+        .unwrap_or_else(|| panic!("No profile named {} found", profile_name));
+    let region = match matches.value_of("region") {
+        None => profile.region,
+        Some(region_name) => Region::from_str(region_name).expect("Error parsing region name"),
+    };
 
-    let ec2_wrapper = ec2_wrapper::AwsEc2Client::new(region, profile);
+    let ec2_wrapper = ec2_wrapper::AwsEc2Client::new(region, profile_name);
 
     if matches.subcommand_matches("list").is_some() {
         if let Err(error) = list(&ec2_wrapper) {
