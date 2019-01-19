@@ -5,66 +5,114 @@ use std::collections::BTreeMap;
 use std::env;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
-use std::path;
+use std::path::PathBuf;
 use std::str::FromStr;
 
 type ConfigMap = BTreeMap<String, Profile>;
 
 lazy_static! {
     static ref SECTION_REGEX: Regex = Regex::new(r"^\[([^\]]*)\].*$").unwrap();
+    static ref AWS_CONFIG_SECTION_REGEX: Regex = Regex::new(r"^\[(?:profile )?(.*)\].*$").unwrap();
     static ref VALUE_REGEX: Regex = Regex::new(r"^\s*([a-zA-Z]*)\s*=\s*(\S*).*$").unwrap();
 }
 
 #[derive(Clone, Debug)]
-pub struct Config {
-    map: ConfigMap,
-    profile_name: Option<String>,
-    current_profile: Profile,
+pub struct Profile {
+    pub region: Region,
+    pub ssh_key: PathBuf,
+    pub default_instance_type: Option<String>,
+    pub security_groups: Option<Vec<String>>,
 }
 
-impl Default for Config {
+impl Default for Profile {
     fn default() -> Self {
-        let mut map = ConfigMap::new();
-        map.insert("default".to_string(), Profile::default());
-
-        Config {
-            map,
-            profile_name: None,
-            current_profile: Profile::default(),
+        Profile {
+            region: Region::default(),
+            ssh_key: PathBuf::default(),
+            default_instance_type: None,
+            security_groups: None,
         }
     }
 }
 
-impl Config {
-    fn get() -> Self {
-        let mut config = Config::default();
-        config.parse_config_file(&Config::get_config_file_path());
-
-        config
+impl Profile {
+    fn add_value(&mut self, name: &str, value: &str) {
+        match name {
+            "region" => {
+                self.region = Region::from_str(value).expect("Error parsing AWS config file");
+            }
+            "key" => self.ssh_key = PathBuf::from(value),
+            "instance-type" => self.default_instance_type = Some(value.to_string()),
+            "security-groups" => {
+                self.security_groups = Some(
+                    value
+                        .split(", ")
+                        .map(|s| s.to_string())
+                        .collect::<Vec<String>>(),
+                )
+            }
+            _ => (),
+        }
     }
+}
 
-    fn add_profile(&mut self, name: &str, profile: Profile) {
-        self.map.insert(name.to_string(), profile);
+pub fn get_aws_config_file_path() -> PathBuf {
+    match env::var_os("AWS_CONFIG_FILE") {
+        Some(value) => PathBuf::from(value),
+        None => {
+            let mut config_path = dirs::home_dir().expect("Home directory not found");
+            config_path.push(".aws");
+            config_path.push("config");
+
+            config_path
+        }
     }
+}
 
-    fn get_profile(&self, name: &str) -> Option<&Profile> {
-        let profile_name = if name == "default" {
-            name.to_string()
-        } else {
-            format!("profile {}", name)
+pub fn get_our_config_file_path() -> PathBuf {
+    match env::var_os("AWS_INSTANCE_CONFIG_FILE") {
+        Some(value) => PathBuf::from(value),
+        None => {
+            let mut config_path = dirs::home_dir().expect("Home directory not found");
+            config_path.push(".aws_instance");
+            config_path.push("config");
+
+            config_path
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct ConfigFileReader {
+    config_map: ConfigMap,
+    profile_name: Option<String>,
+    current_profile: Profile,
+}
+
+impl ConfigFileReader {
+    pub fn new() -> Self {
+        let mut reader = ConfigFileReader {
+            config_map: ConfigMap::default(),
+            profile_name: None,
+            current_profile: Profile::default(),
         };
-        self.map.get(&profile_name)
+
+        reader.parse(&get_aws_config_file_path(), &AWS_CONFIG_SECTION_REGEX);
+        reader.parse(&get_our_config_file_path(), &SECTION_REGEX);
+
+        reader
     }
 
-    fn parse_config_file(&mut self, path: &path::PathBuf) {
-        if path.exists() {
-            let file = File::open(path.clone())
-                .unwrap_or_else(|_| panic!("Error opening config file {:?}", path));
+    fn parse(&mut self, file_path: &PathBuf, section_regex: &Regex) {
+        if file_path.exists() {
+            debug!("Parsing {:?}", file_path);
+            let file = File::open(file_path.clone())
+                .unwrap_or_else(|_| panic!("Error opening config file {:?}", file_path));
             for line_or_error in BufReader::new(file).lines() {
                 match line_or_error {
                     Err(error) => panic!("Error reading config file: {}", error),
                     Ok(line) => {
-                        self.parse_line(&line);
+                        self.parse_line(&line, section_regex);
                     }
                 };
             }
@@ -72,27 +120,28 @@ impl Config {
             if self.profile_name.is_some() {
                 let name = self.clone().profile_name.unwrap();
                 let profile = self.current_profile.clone();
-                self.add_profile(&name, profile);
+                self.add_profile(name, profile);
             }
         }
     }
 
-    fn parse_line(&mut self, line: &str) {
-        if SECTION_REGEX.is_match(&line) {
-            self.set_section_name(
-                SECTION_REGEX
-                    .captures(&line)
-                    .unwrap()
-                    .get(1)
-                    .unwrap()
-                    .as_str(),
-            );
+    fn parse_line(&mut self, line: &str, section_regex: &Regex) {
+        debug!("Parsing line '{}'", line);
+        if section_regex.is_match(&line) {
+            let section_name = section_regex
+                .captures(&line)
+                .unwrap()
+                .get(1)
+                .expect("No section name found")
+                .as_str();
+            debug!("Parsed section name '{}'", section_name);
+            self.set_section_name(section_name);
         } else if VALUE_REGEX.is_match(&line) {
             let captures = VALUE_REGEX.captures(&line).unwrap();
-            self.set_value(
-                captures.get(1).unwrap().as_str(),
-                captures.get(2).unwrap().as_str(),
-            );
+            let key = captures.get(1).unwrap().as_str();
+            let value = captures.get(2).unwrap().as_str();
+            debug!("Parsed key = {}, value = {}", key, value);
+            self.set_value(key, value);
         }
     }
 
@@ -101,55 +150,23 @@ impl Config {
             let config = self.clone();
             let profile_name = config.profile_name.unwrap().clone();
             let profile = config.current_profile.clone();
-            self.add_profile(&profile_name, profile);
+            self.add_profile(profile_name, profile);
             self.current_profile = Profile::default();
         }
+        debug!("Setting profile name to {}", section_name);
         self.profile_name = Some(section_name.to_string());
     }
 
     fn set_value(&mut self, key: &str, value: &str) {
-        if self.profile_name.is_none() {
-            println!("Got entry in config outside profile");
-        } else if key == "region" {
-            let region_name = value;
-            self.current_profile.region =
-                Region::from_str(region_name).expect("Error parsing AWS config file");
-        }
+        self.current_profile.add_value(key, value);
     }
 
-    fn get_config_file_path() -> path::PathBuf {
-        match env::var_os("AWS_CONFIG_FILE") {
-            Some(value) => path::PathBuf::from(value),
-            None => Self::get_default_config_file_path(),
-        }
+    fn add_profile(&mut self, name: String, profile: Profile) {
+        debug!("Adding profile named {}: {:?}", name, profile);
+        self.config_map.insert(name, profile);
     }
 
-    fn get_default_config_file_path() -> path::PathBuf {
-        let mut config_file_path = dirs::home_dir().expect("Unable to locate home directory");
-        config_file_path.push(".aws");
-        config_file_path.push("config");
-
-        config_file_path
-    }
-}
-
-#[derive(Clone, Debug)]
-pub struct Profile {
-    pub region: Region,
-}
-
-impl Default for Profile {
-    fn default() -> Self {
-        Profile {
-            region: Region::default(),
-        }
-    }
-}
-
-impl Profile {
-    pub fn get(name: &str) -> Option<Profile> {
-        let config = Config::get();
-
-        config.get_profile(name).cloned()
+    pub fn get_profile(&self, name: &str) -> Option<&Profile> {
+        self.config_map.get(name)
     }
 }

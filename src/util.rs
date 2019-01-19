@@ -4,23 +4,6 @@ extern crate rusoto_ec2;
 
 use super::ec2_wrapper;
 
-macro_rules! debug {
-    ($fmt:expr) => {
-        unsafe {
-            if ::DEBUG {
-                (println!($fmt))
-            };
-        }
-    };
-    ($fmt:expr, $($arg:tt)*) => {
-        unsafe {
-            if ::DEBUG {
-                (println!($fmt, $($arg)*))
-            };
-        }
-    };
-}
-
 pub fn get_name(instance: &rusoto_ec2::Instance) -> String {
     match instance.tags {
         Some(ref tags) => {

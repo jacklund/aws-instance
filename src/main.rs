@@ -11,8 +11,6 @@ extern crate rusoto_ec2;
 #[macro_use]
 extern crate lazy_static;
 
-#[macro_use]
-mod util;
 mod create;
 mod destroy;
 mod ec2_wrapper;
@@ -22,6 +20,7 @@ mod profile;
 mod ssh;
 mod start;
 mod stop;
+mod util;
 
 use clap::ArgMatches;
 use rusoto_core::Region;
@@ -34,7 +33,7 @@ use create::{create_instance, CreateOptions};
 use destroy::destroy_instance;
 use list::list;
 use list_amis::list_amis;
-use profile::Profile;
+use profile::ConfigFileReader;
 use ssh::ssh;
 use start::start;
 use stop::stop;
@@ -111,10 +110,14 @@ fn main() {
     ).name(crate_name!()).get_matches();
 
     let profile_name = matches.value_of("profile").or(Some("default")).unwrap();
-    let profile = Profile::get(profile_name)
+    debug!("Calling ConfigFileReader::new()");
+    let config_file = ConfigFileReader::new();
+    debug!("config file = {:?}", config_file);
+    let profile = config_file
+        .get_profile(profile_name)
         .unwrap_or_else(|| panic!("No profile named {} found", profile_name));
     let region = match matches.value_of("region") {
-        None => profile.region,
+        None => profile.clone().region,
         Some(region_name) => Region::from_str(region_name).expect("Error parsing region name"),
     };
 
@@ -122,7 +125,7 @@ fn main() {
 
     if matches.subcommand_matches("list").is_some() {
         if let Err(error) = list(&ec2_wrapper) {
-            eprintln!("{:?}", error);
+            error!("{:?}", error);
         }
     } else if let Some(matches) = matches.subcommand_matches("list_amis") {
         let mut filter_values: HashMap<String, Vec<String>> = HashMap::new();
@@ -131,7 +134,7 @@ fn main() {
                 let split: Vec<&str> = key_value.split('=').collect();
                 match split.len() {
                     1 => {
-                        eprintln!("Filter value {} doesn't contain an '='", key_value);
+                        error!("Filter value {} doesn't contain an '='", key_value);
                         exit(1);
                     }
                     2 => {
@@ -145,41 +148,41 @@ fn main() {
                         }
                     }
                     _ => {
-                        eprintln!("Filter value {} contains too many '='s", key_value);
+                        error!("Filter value {} contains too many '='s", key_value);
                         exit(1);
                     }
                 }
             }
         }
         if let Err(error) = list_amis(&ec2_wrapper, &filter_values) {
-            eprintln!("{:?}", error);
+            error!("{:?}", error);
         }
     } else if let Some(matches) = matches.subcommand_matches("ssh") {
         let name = matches.value_of("NAME").unwrap();
         let sshopts: Vec<&str> = matches.values_of("sshopts").unwrap_or_default().collect();
         if let Err(error) = ssh(&ec2_wrapper, name, &sshopts) {
-            eprintln!("{:?}", error);
+            error!("{:?}", error);
         }
     } else if let Some(matches) = matches.subcommand_matches("start") {
         let name = matches.value_of("NAME").unwrap();
         if let Err(error) = start(&ec2_wrapper, name) {
-            eprintln!("{:?}", error);
+            error!("{:?}", error);
         }
     } else if let Some(matches) = matches.subcommand_matches("stop") {
         let name = matches.value_of("NAME").unwrap();
         if let Err(error) = stop(&ec2_wrapper, name) {
-            eprintln!("{:?}", error);
+            error!("{:?}", error);
         }
     } else if let Some(matches) = matches.subcommand_matches("create") {
         let name = matches.value_of("NAME").unwrap();
         let create_options = get_create_options(matches);
         if let Err(error) = create_instance(&ec2_wrapper, name, create_options) {
-            eprintln!("{:?}", error);
+            error!("{:?}", error);
         }
     } else if let Some(matches) = matches.subcommand_matches("destroy") {
         let name = matches.value_of("NAME").unwrap();
         if let Err(error) = destroy_instance(&ec2_wrapper, name) {
-            eprintln!("{:?}", error);
+            error!("{:?}", error);
         }
     }
 }
