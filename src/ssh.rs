@@ -28,7 +28,10 @@ pub fn ssh(
         }
     };
 
-    debug!("Calling ssh");
+    debug!(
+        "Calling command 'ssh {} -l admin {:?}",
+        ip_address, ssh_opts
+    );
     let mut child = Command::new("ssh")
         .arg(ip_address)
         .args(vec!["-l", "admin"])

@@ -24,24 +24,28 @@ mod util;
 
 use clap::ArgMatches;
 use rusoto_core::Region;
-use rusoto_ec2::IamInstanceProfileSpecification;
+use rusoto_ec2::{DescribeImagesError, IamInstanceProfileSpecification, RunInstancesError};
 use std::collections::HashMap;
 use std::process::exit;
+use std::str;
 use std::str::FromStr;
 
 use create::{create_instance, CreateOptions};
 use destroy::destroy_instance;
 use list::list;
 use list_amis::list_amis;
-use profile::ConfigFileReader;
+use profile::{ConfigFileReader, Profile};
 use ssh::ssh;
 use start::start;
 use stop::stop;
 
 pub static mut DEBUG: bool = false;
 
-fn get_create_options(matches: &ArgMatches) -> CreateOptions {
+fn get_create_options(matches: &ArgMatches, profile: Profile) -> CreateOptions {
     let mut ret = CreateOptions::default();
+    ret.instance_type = profile.default_instance_type;
+    ret.key_name = profile.keypair;
+    ret.security_group_ids = profile.security_groups;
 
     ret.ebs_optimized = Some(matches.is_present("ebs_optimized"));
     if let Some(profile) = matches.value_of("iam_instance_profile") {
@@ -80,8 +84,8 @@ fn main() {
             (@arg ebs_optimized: -e --ebs_optimized "Indicates whether the instance is optimized for Amazon EBS I/O")
             (@arg iam_instance_profile: -i --iam_profile +takes_value "The IAM instance profile")
             (@arg instance_type: -t --instance_type +takes_value "The EC2 instance type")
-            (@arg keypair_name: -k --keypair +required +takes_value "The keypair name")
-            (@arg security_group_ids: -s... --security_group_id +required +takes_value "Security group ids")
+            (@arg keypair_name: -k --keypair +takes_value "The keypair name")
+            (@arg security_group_ids: -s... --security_group_id +takes_value "Security group ids")
         )
         (@subcommand destroy =>
             (about: "Destroy an instance")
@@ -112,10 +116,10 @@ fn main() {
     let profile_name = matches.value_of("profile").or(Some("default")).unwrap();
     debug!("Calling ConfigFileReader::new()");
     let config_file = ConfigFileReader::new();
-    debug!("config file = {:?}", config_file);
     let profile = config_file
         .get_profile(profile_name)
         .unwrap_or_else(|| panic!("No profile named {} found", profile_name));
+    debug!("Using profile {:?}", profile);
     let region = match matches.value_of("region") {
         None => profile.clone().region,
         Some(region_name) => Region::from_str(region_name).expect("Error parsing region name"),
@@ -125,7 +129,7 @@ fn main() {
 
     if matches.subcommand_matches("list").is_some() {
         if let Err(error) = list(&ec2_wrapper) {
-            error!("{:?}", error);
+            error!("{}", error);
         }
     } else if let Some(matches) = matches.subcommand_matches("list_amis") {
         let mut filter_values: HashMap<String, Vec<String>> = HashMap::new();
@@ -155,29 +159,62 @@ fn main() {
             }
         }
         if let Err(error) = list_amis(&ec2_wrapper, &filter_values) {
-            error!("{:?}", error);
+            match error {
+                DescribeImagesError::Credentials(credentials_error) => {
+                    error!("Credentials error: {}", credentials_error.message)
+                }
+                DescribeImagesError::HttpDispatch(dispatch_error) => {
+                    error!("Http Dispatch Error: {}", dispatch_error.to_string())
+                }
+                DescribeImagesError::ParseError(message) => error!("Parse error: {}", message),
+                DescribeImagesError::Unknown(http_response) => error!(
+                    "Unknown error: status: {}, body: {}",
+                    http_response.status,
+                    str::from_utf8(&http_response.body).unwrap()
+                ),
+                DescribeImagesError::Validation(message) => error!("Validation error: {}", message),
+            }
         }
     } else if let Some(matches) = matches.subcommand_matches("ssh") {
         let name = matches.value_of("NAME").unwrap();
-        let sshopts: Vec<&str> = matches.values_of("sshopts").unwrap_or_default().collect();
+        let mut sshopts: Vec<&str> = matches.values_of("sshopts").unwrap_or_default().collect();
+        if profile.ssh_key.exists() && !sshopts.contains(&"-i") {
+            debug!("Adding -i {} to ssh opts", profile.ssh_key.to_str().unwrap());
+            sshopts.push("-i");
+            sshopts.push(profile.ssh_key.to_str().unwrap());
+        }
         if let Err(error) = ssh(&ec2_wrapper, name, &sshopts) {
-            error!("{:?}", error);
+            error!("{}", error);
         }
     } else if let Some(matches) = matches.subcommand_matches("start") {
         let name = matches.value_of("NAME").unwrap();
         if let Err(error) = start(&ec2_wrapper, name) {
-            error!("{:?}", error);
+            error!("{}", error);
         }
     } else if let Some(matches) = matches.subcommand_matches("stop") {
         let name = matches.value_of("NAME").unwrap();
         if let Err(error) = stop(&ec2_wrapper, name) {
-            error!("{:?}", error);
+            error!("{}", error);
         }
     } else if let Some(matches) = matches.subcommand_matches("create") {
         let name = matches.value_of("NAME").unwrap();
-        let create_options = get_create_options(matches);
+        let create_options = get_create_options(matches, profile.clone());
         if let Err(error) = create_instance(&ec2_wrapper, name, create_options) {
-            error!("{:?}", error);
+            match error {
+                RunInstancesError::Credentials(credentials_error) => {
+                    error!("Credentials error: {}", credentials_error.message)
+                }
+                RunInstancesError::HttpDispatch(dispatch_error) => {
+                    error!("Http Dispatch Error: {}", dispatch_error.to_string())
+                }
+                RunInstancesError::ParseError(message) => error!("Parse error: {}", message),
+                RunInstancesError::Unknown(http_response) => error!(
+                    "Unknown error: status: {}, body: {}",
+                    http_response.status,
+                    str::from_utf8(&http_response.body).unwrap()
+                ),
+                RunInstancesError::Validation(message) => error!("Validation error: {}", message),
+            }
         }
     } else if let Some(matches) = matches.subcommand_matches("destroy") {
         let name = matches.value_of("NAME").unwrap();

@@ -1,7 +1,6 @@
 use super::ec2_wrapper;
-use rusoto_ec2::{DescribeImagesRequest, Filter};
+use rusoto_ec2::{DescribeImagesError, DescribeImagesRequest, Filter};
 use std::collections::HashMap;
-use std::error::Error;
 
 fn print_option(option: Option<String>) -> String {
     match option {
@@ -13,7 +12,7 @@ fn print_option(option: Option<String>) -> String {
 pub fn list_amis(
     ec2_client: &ec2_wrapper::Ec2Wrapper,
     filter_values: &HashMap<String, Vec<String>>,
-) -> Result<(), Box<Error>> {
+) -> Result<(), DescribeImagesError> {
     let mut request = DescribeImagesRequest::default();
     if !filter_values.is_empty() {
         let mut filters = vec![];

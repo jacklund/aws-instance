@@ -13,12 +13,13 @@ type ConfigMap = BTreeMap<String, Profile>;
 lazy_static! {
     static ref SECTION_REGEX: Regex = Regex::new(r"^\[([^\]]*)\].*$").unwrap();
     static ref AWS_CONFIG_SECTION_REGEX: Regex = Regex::new(r"^\[(?:profile )?(.*)\].*$").unwrap();
-    static ref VALUE_REGEX: Regex = Regex::new(r"^\s*([a-zA-Z]*)\s*=\s*(\S*).*$").unwrap();
+    static ref VALUE_REGEX: Regex = Regex::new(r"^\s*(\S*)\s*=\s*(\S*).*$").unwrap();
 }
 
 #[derive(Clone, Debug)]
 pub struct Profile {
     pub region: Region,
+    pub keypair: Option<String>,
     pub ssh_key: PathBuf,
     pub default_instance_type: Option<String>,
     pub security_groups: Option<Vec<String>>,
@@ -28,6 +29,7 @@ impl Default for Profile {
     fn default() -> Self {
         Profile {
             region: Region::default(),
+            keypair: None,
             ssh_key: PathBuf::default(),
             default_instance_type: None,
             security_groups: None,
@@ -41,6 +43,7 @@ impl Profile {
             "region" => {
                 self.region = Region::from_str(value).expect("Error parsing AWS config file");
             }
+            "keypair" => self.keypair = Some(value.to_string()),
             "key" => self.ssh_key = PathBuf::from(value),
             "instance-type" => self.default_instance_type = Some(value.to_string()),
             "security-groups" => {
@@ -74,7 +77,7 @@ pub fn get_our_config_file_path() -> PathBuf {
         Some(value) => PathBuf::from(value),
         None => {
             let mut config_path = dirs::home_dir().expect("Home directory not found");
-            config_path.push(".aws_instance");
+            config_path.push(".aws-instance");
             config_path.push("config");
 
             config_path
