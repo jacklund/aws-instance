@@ -69,10 +69,39 @@ fn get_create_options(matches: &ArgMatches, profile: Profile) -> CreateOptions {
     ret
 }
 
-fn main() {
-    env_logger::init();
+fn parse_filters(matches: &ArgMatches) -> HashMap<String, Vec<String>> {
+    let mut filter_values: HashMap<String, Vec<String>> = HashMap::new();
+    if let Some(filters) = matches.values_of("filters") {
+        for key_value in filters {
+            let split: Vec<&str> = key_value.split('=').collect();
+            match split.len() {
+                1 => {
+                    error!("Filter value {} doesn't contain an '='", key_value);
+                    exit(1);
+                }
+                2 => {
+                    if filter_values.contains_key(split[0]) {
+                        filter_values
+                            .get_mut(split[0])
+                            .unwrap()
+                            .push(split[1].to_string());
+                    } else {
+                        filter_values.insert(split[0].to_string(), vec![split[1].to_string()]);
+                    }
+                }
+                _ => {
+                    error!("Filter value {} contains too many '='s", key_value);
+                    exit(1);
+                }
+            }
+        }
+    }
 
-    let matches = clap_app!(myapp =>
+    filter_values
+}
+
+fn parse_command_line<'a>() -> ArgMatches<'a> {
+    clap_app!(myapp =>
         (about: "Manage AWS instances")
         (@arg profile: -p --profile +takes_value "Set the AWS profile to use")
         (@arg region: -r --region +takes_value "Set the AWS region to use")
@@ -111,15 +140,29 @@ fn main() {
             (about: "Stop an instance")
             (@arg NAME: +required "Name of the instance")
         )
-    ).name(crate_name!()).get_matches();
+    ).name(crate_name!()).get_matches()
+}
 
+fn get_profile<'a>(matches: ArgMatches<'a>, config_file: &'a ConfigFileReader) -> &'a Profile {
     let profile_name = matches.value_of("profile").or(Some("default")).unwrap();
     debug!("Calling ConfigFileReader::new()");
-    let config_file = ConfigFileReader::new();
     let profile = config_file
         .get_profile(profile_name)
         .unwrap_or_else(|| panic!("No profile named {} found", profile_name));
     debug!("Using profile {:?}", profile);
+
+    profile
+}
+
+fn main() {
+    env_logger::init();
+
+    let matches = parse_command_line();
+
+    debug!("Calling ConfigFileReader::new()");
+    let config_file = ConfigFileReader::new();
+    let profile_name = matches.value_of("profile").or(Some("default")).unwrap();
+    let profile = get_profile(matches.clone(), &config_file);
     let region = match matches.value_of("region") {
         None => profile.clone().region,
         Some(region_name) => Region::from_str(region_name).expect("Error parsing region name"),
@@ -132,54 +175,25 @@ fn main() {
             error!("{}", error);
         }
     } else if let Some(matches) = matches.subcommand_matches("list_amis") {
-        let mut filter_values: HashMap<String, Vec<String>> = HashMap::new();
-        if let Some(filters) = matches.values_of("filters") {
-            for key_value in filters {
-                let split: Vec<&str> = key_value.split('=').collect();
-                match split.len() {
-                    1 => {
-                        error!("Filter value {} doesn't contain an '='", key_value);
-                        exit(1);
-                    }
-                    2 => {
-                        if filter_values.contains_key(split[0]) {
-                            filter_values
-                                .get_mut(split[0])
-                                .unwrap()
-                                .push(split[1].to_string());
-                        } else {
-                            filter_values.insert(split[0].to_string(), vec![split[1].to_string()]);
-                        }
-                    }
-                    _ => {
-                        error!("Filter value {} contains too many '='s", key_value);
-                        exit(1);
-                    }
-                }
-            }
-        }
+        let filter_values = parse_filters(matches);
         if let Err(error) = list_amis(&ec2_wrapper, &filter_values) {
             match error {
-                DescribeImagesError::Credentials(credentials_error) => {
-                    error!("Credentials error: {}", credentials_error.message)
-                }
-                DescribeImagesError::HttpDispatch(dispatch_error) => {
-                    error!("Http Dispatch Error: {}", dispatch_error.to_string())
-                }
-                DescribeImagesError::ParseError(message) => error!("Parse error: {}", message),
                 DescribeImagesError::Unknown(http_response) => error!(
                     "Unknown error: status: {}, body: {}",
                     http_response.status,
                     str::from_utf8(&http_response.body).unwrap()
                 ),
-                DescribeImagesError::Validation(message) => error!("Validation error: {}", message),
+                _ => error!("List AMIs error: {}", error),
             }
         }
     } else if let Some(matches) = matches.subcommand_matches("ssh") {
         let name = matches.value_of("NAME").unwrap();
         let mut sshopts: Vec<&str> = matches.values_of("sshopts").unwrap_or_default().collect();
         if profile.ssh_key.exists() && !sshopts.contains(&"-i") {
-            debug!("Adding -i {} to ssh opts", profile.ssh_key.to_str().unwrap());
+            debug!(
+                "Adding -i {} to ssh opts",
+                profile.ssh_key.to_str().unwrap()
+            );
             sshopts.push("-i");
             sshopts.push(profile.ssh_key.to_str().unwrap());
         }
@@ -201,19 +215,12 @@ fn main() {
         let create_options = get_create_options(matches, profile.clone());
         if let Err(error) = create_instance(&ec2_wrapper, name, create_options) {
             match error {
-                RunInstancesError::Credentials(credentials_error) => {
-                    error!("Credentials error: {}", credentials_error.message)
-                }
-                RunInstancesError::HttpDispatch(dispatch_error) => {
-                    error!("Http Dispatch Error: {}", dispatch_error.to_string())
-                }
-                RunInstancesError::ParseError(message) => error!("Parse error: {}", message),
                 RunInstancesError::Unknown(http_response) => error!(
                     "Unknown error: status: {}, body: {}",
                     http_response.status,
                     str::from_utf8(&http_response.body).unwrap()
                 ),
-                RunInstancesError::Validation(message) => error!("Validation error: {}", message),
+                _ => error!("Create error: {}", error),
             }
         }
     } else if let Some(matches) = matches.subcommand_matches("destroy") {
