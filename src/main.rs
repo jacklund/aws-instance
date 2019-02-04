@@ -30,14 +30,14 @@ use std::process::exit;
 use std::str;
 use std::str::FromStr;
 
-use create::{create_instance, CreateOptions};
-use destroy::destroy_instance;
-use list::list;
-use list_amis::list_amis;
-use profile::{ConfigFileReader, Profile};
-use ssh::ssh;
-use start::start;
-use stop::stop;
+use crate::create::{create_instance, CreateOptions};
+use crate::destroy::destroy_instance;
+use crate::list::list;
+use crate::list_amis::list_amis;
+use crate::profile::{ConfigFileReader, Profile};
+use crate::ssh::ssh;
+use crate::start::start;
+use crate::stop::stop;
 
 pub static mut DEBUG: bool = false;
 

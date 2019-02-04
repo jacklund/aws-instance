@@ -88,7 +88,7 @@ pub fn get_all_instances(
 #[cfg(test)]
 mod test {
     use super::{get_all_instances, get_instance_by_name};
-    use ec2_wrapper::test::MockEc2Wrapper;
+    use crate::ec2_wrapper::test::MockEc2Wrapper;
     use rusoto_ec2::{DescribeInstancesRequest, DescribeInstancesResult, Instance, Reservation};
 
     #[test]

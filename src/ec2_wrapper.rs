@@ -113,7 +113,7 @@ impl Ec2Wrapper for AwsEc2Client {
 // Result.
 #[cfg(test)]
 pub mod test {
-    use ec2_wrapper::Ec2Wrapper;
+    use crate::ec2_wrapper::Ec2Wrapper;
     use rusoto_ec2::{
         DescribeImagesError, DescribeImagesRequest, DescribeImagesResult, DescribeInstancesError,
         DescribeInstancesRequest, DescribeInstancesResult, Reservation, RunInstancesError,
