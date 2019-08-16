@@ -1,6 +1,6 @@
 extern crate rusoto_ec2;
 
-use crate::{ec2_wrapper, util, Result};
+use crate::{ec2_wrapper, print_state_changes, util, AwsInstanceError, Result};
 
 pub fn start(ec2_client: &ec2_wrapper::Ec2Wrapper, name: &str) -> Result<()> {
     debug!("Calling get_instance_by_name({:?})", name);
@@ -13,19 +13,20 @@ pub fn start(ec2_client: &ec2_wrapper::Ec2Wrapper, name: &str) -> Result<()> {
             debug!("Calling start_instances");
             let result = ec2_client.start_instances(request)?;
             if let Some(state_changes) = result.starting_instances {
-                for state_change in state_changes {
-                    println!(
-                        "{}: {} => {}",
-                        state_change.instance_id.unwrap(),
-                        state_change.previous_state.unwrap().name.unwrap(),
-                        state_change.current_state.unwrap().name.unwrap()
-                    );
-                }
+                print_state_changes(state_changes);
             } else {
-                println!("No state change returned");
+                return Err(AwsInstanceError::StartInstanceError {
+                    instance_name: name.into(),
+                    message: "No state change returned".into(),
+                });
             }
         }
-        None => eprintln!("No instance named '{}' found", name),
+        None => {
+            return Err(AwsInstanceError::StartInstanceError {
+                instance_name: name.into(),
+                message: "Instance not found".into(),
+            })
+        }
     }
     Ok(())
 }

@@ -85,6 +85,17 @@ pub fn get_all_instances(
     Ok(instances)
 }
 
+pub fn print_state_changes(state_changes: Vec<rusoto_ec2::InstanceStateChange>) {
+    for state_change in state_changes {
+        println!(
+            "{}: {} => {}",
+            state_change.instance_id.unwrap(),
+            state_change.previous_state.unwrap().name.unwrap(),
+            state_change.current_state.unwrap().name.unwrap()
+        );
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::{get_all_instances, get_instance_by_name};

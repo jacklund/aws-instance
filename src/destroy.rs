@@ -1,4 +1,4 @@
-use crate::{ec2_wrapper, util, Result};
+use crate::{ec2_wrapper, print_state_changes, util, AwsInstanceError, Result};
 use rusoto_ec2;
 
 pub fn destroy_instance(ec2_client: &ec2_wrapper::Ec2Wrapper, name: &str) -> Result<()> {
@@ -10,19 +10,20 @@ pub fn destroy_instance(ec2_client: &ec2_wrapper::Ec2Wrapper, name: &str) -> Res
 
             let result = ec2_client.terminate_instances(request)?;
             if let Some(state_changes) = result.terminating_instances {
-                for state_change in state_changes {
-                    println!(
-                        "{}: {} => {}",
-                        state_change.instance_id.unwrap(),
-                        state_change.previous_state.unwrap().name.unwrap(),
-                        state_change.current_state.unwrap().name.unwrap()
-                    );
-                }
+                print_state_changes(state_changes);
             } else {
-                println!("No state change returned");
+                return Err(AwsInstanceError::DestroyInstanceError {
+                    instance_name: name.into(),
+                    message: "No state change returned".into(),
+                });
             }
         }
-        None => eprintln!("No instance named '{}' found", name),
+        None => {
+            return Err(AwsInstanceError::DestroyInstanceError {
+                instance_name: name.into(),
+                message: "Instance not found".into(),
+            })
+        }
     }
     Ok(())
 }

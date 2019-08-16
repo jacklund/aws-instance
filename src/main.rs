@@ -1,15 +1,18 @@
 extern crate clap;
-extern crate failure;
-#[macro_use]
-extern crate log;
 extern crate dirs;
 extern crate env_logger;
+#[macro_use]
+extern crate lazy_static;
+#[macro_use]
+extern crate log;
 extern crate regex;
 extern crate rusoto_core;
 extern crate rusoto_credential;
 extern crate rusoto_ec2;
 #[macro_use]
-extern crate lazy_static;
+extern crate serde_derive;
+extern crate serde_xml_rs;
+extern crate snafu;
 extern crate structopt;
 
 mod cmdline;
@@ -41,6 +44,7 @@ use crate::start::start;
 use crate::stop::stop;
 
 pub use crate::error::{AwsInstanceError, Result};
+pub use crate::util::print_state_changes;
 
 fn get_profile(profile_name: &str, config_file: &ConfigFileReader) -> Profile {
     let profile = config_file
@@ -50,9 +54,16 @@ fn get_profile(profile_name: &str, config_file: &ConfigFileReader) -> Profile {
     profile.clone()
 }
 
-fn main() -> Result<()> {
+fn main() {
     env_logger::init();
 
+    if let Err(error) = run_commands() {
+        eprintln!("{}", error);
+        std::process::exit(1);
+    }
+}
+
+fn run_commands() -> Result<()> {
     let options = parse_command_line();
 
     let config_file = ConfigFileReader::new();
@@ -100,7 +111,7 @@ fn main() -> Result<()> {
             if security_group_ids.is_empty() && profile.security_groups.is_some() {
                 security_group_ids = profile.security_groups.unwrap();
             }
-            create_instance(
+            if let Err(error) = create_instance(
                 &ec2_wrapper,
                 &name,
                 &ami_id,
@@ -109,7 +120,9 @@ fn main() -> Result<()> {
                 instance_type,
                 keypair_name,
                 security_group_ids,
-            )?;
+            ) {
+                eprintln!("{}", error);
+            }
         }
 
         SubCommands::Destroy { name } => {
