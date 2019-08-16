@@ -4,7 +4,7 @@ use rusoto_ec2::{
 };
 
 pub fn create_instance(
-    ec2_client: &ec2_wrapper::Ec2Wrapper,
+    ec2_client: &dyn ec2_wrapper::Ec2Wrapper,
     name: &str,
     ami_id: &str,
     ebs_optimized: bool,

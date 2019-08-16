@@ -5,7 +5,11 @@ extern crate rusoto_ec2;
 use crate::{ec2_wrapper, util, Result};
 use std::process::{exit, Command};
 
-pub fn ssh(ec2_client: &ec2_wrapper::Ec2Wrapper, name: &str, ssh_opts: &[String]) -> Result<()> {
+pub fn ssh(
+    ec2_client: &dyn ec2_wrapper::Ec2Wrapper,
+    name: &str,
+    ssh_opts: &[String],
+) -> Result<()> {
     debug!("Calling util::get_instance_by_name({:?})", name);
     let instance = match util::get_instance_by_name(ec2_client, name)? {
         Some(instance) => instance,

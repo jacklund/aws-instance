@@ -3,7 +3,7 @@ extern crate rusoto_ec2;
 
 use crate::{ec2_wrapper, util, Result};
 
-pub fn list(ec2_client: &ec2_wrapper::Ec2Wrapper) -> Result<()> {
+pub fn list(ec2_client: &dyn ec2_wrapper::Ec2Wrapper) -> Result<()> {
     debug!("Calling get_all_instances");
     let instances = util::get_all_instances(ec2_client)?;
     println!(

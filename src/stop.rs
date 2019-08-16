@@ -2,7 +2,7 @@ extern crate rusoto_ec2;
 
 use crate::{ec2_wrapper, print_state_changes, util, AwsInstanceError, Result};
 
-pub fn stop(ec2_client: &ec2_wrapper::Ec2Wrapper, name: &str) -> Result<()> {
+pub fn stop(ec2_client: &dyn ec2_wrapper::Ec2Wrapper, name: &str) -> Result<()> {
     debug!("Calling get_instance_by_name({:?})", name);
     match util::get_instance_by_name(ec2_client, name)? {
         Some(instance) => {

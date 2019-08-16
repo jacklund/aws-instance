@@ -10,7 +10,7 @@ fn print_option(option: Option<String>) -> String {
 }
 
 pub fn list_amis(
-    ec2_client: &ec2_wrapper::Ec2Wrapper,
+    ec2_client: &dyn ec2_wrapper::Ec2Wrapper,
     filter_values: &HashMap<String, Vec<String>>,
     search_string: Option<String>,
 ) -> Result<()> {

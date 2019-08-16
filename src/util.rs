@@ -37,7 +37,7 @@ pub fn get_public_ip_address(instance: &rusoto_ec2::Instance) -> Option<String> 
 }
 
 pub fn get_instance_by_name(
-    ec2_client: &ec2_wrapper::Ec2Wrapper,
+    ec2_client: &dyn ec2_wrapper::Ec2Wrapper,
     name: &str,
 ) -> Result<Option<rusoto_ec2::Instance>> {
     let mut request = rusoto_ec2::DescribeInstancesRequest::default();
@@ -59,7 +59,7 @@ pub fn get_instance_by_name(
 }
 
 pub fn get_all_instances(
-    ec2_client: &ec2_wrapper::Ec2Wrapper,
+    ec2_client: &dyn ec2_wrapper::Ec2Wrapper,
 ) -> Result<Vec<rusoto_ec2::Instance>> {
     let request = rusoto_ec2::DescribeInstancesRequest {
         dry_run: Some(false),

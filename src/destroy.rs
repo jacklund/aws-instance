@@ -1,7 +1,7 @@
 use crate::{ec2_wrapper, print_state_changes, util, AwsInstanceError, Result};
 use rusoto_ec2;
 
-pub fn destroy_instance(ec2_client: &ec2_wrapper::Ec2Wrapper, name: &str) -> Result<()> {
+pub fn destroy_instance(ec2_client: &dyn ec2_wrapper::Ec2Wrapper, name: &str) -> Result<()> {
     match util::get_instance_by_name(ec2_client, name)? {
         Some(instance) => {
             let instance_id = instance.instance_id.unwrap();

@@ -42,7 +42,7 @@ pub trait Ec2Wrapper {
 }
 
 pub struct AwsEc2Client {
-    ec2: Box<Ec2>,
+    ec2: Box<dyn Ec2>,
 }
 
 impl AwsEc2Client {
