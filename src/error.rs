@@ -57,6 +57,12 @@ pub enum AwsInstanceError {
         message: String,
     },
 
+    #[snafu(display("Error creating instance {}: {}", instance_name, message))]
+    CreateInstanceError {
+        instance_name: String,
+        message: String,
+    },
+
     #[snafu(display("Error destroying instance {}: {}", instance_name, message))]
     DestroyInstanceError {
         instance_name: String,
