@@ -1,11 +1,9 @@
 extern crate rusoto_credential;
 extern crate rusoto_ec2;
 
-use super::{ec2_wrapper, util};
+use crate::{ec2_wrapper, util, Result};
 
-pub fn list(
-    ec2_client: &ec2_wrapper::Ec2Wrapper,
-) -> Result<(), rusoto_ec2::DescribeInstancesError> {
+pub fn list(ec2_client: &ec2_wrapper::Ec2Wrapper) -> Result<()> {
     debug!("Calling get_all_instances");
     let instances = util::get_all_instances(ec2_client)?;
     println!(

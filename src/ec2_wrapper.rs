@@ -4,7 +4,7 @@ extern crate rusoto_core;
 extern crate rusoto_credential;
 extern crate rusoto_ec2;
 
-use rusoto_core::{HttpClient, Region};
+use rusoto_core::{HttpClient, Region, RusotoError};
 use rusoto_credential::{DefaultCredentialsProvider, ProfileProvider};
 use rusoto_ec2::{
     DescribeImagesError, DescribeImagesRequest, DescribeImagesResult, DescribeInstancesError,
@@ -18,24 +18,27 @@ pub trait Ec2Wrapper {
     fn describe_images(
         &self,
         input: DescribeImagesRequest,
-    ) -> Result<DescribeImagesResult, DescribeImagesError>;
+    ) -> Result<DescribeImagesResult, RusotoError<DescribeImagesError>>;
     fn describe_instances(
         &self,
         input: DescribeInstancesRequest,
-    ) -> Result<DescribeInstancesResult, DescribeInstancesError>;
-    fn run_instances(&self, input: RunInstancesRequest) -> Result<Reservation, RunInstancesError>;
+    ) -> Result<DescribeInstancesResult, RusotoError<DescribeInstancesError>>;
+    fn run_instances(
+        &self,
+        input: RunInstancesRequest,
+    ) -> Result<Reservation, RusotoError<RunInstancesError>>;
     fn start_instances(
         &self,
         input: StartInstancesRequest,
-    ) -> Result<StartInstancesResult, StartInstancesError>;
+    ) -> Result<StartInstancesResult, RusotoError<StartInstancesError>>;
     fn stop_instances(
         &self,
         input: StopInstancesRequest,
-    ) -> Result<StopInstancesResult, StopInstancesError>;
+    ) -> Result<StopInstancesResult, RusotoError<StopInstancesError>>;
     fn terminate_instances(
         &self,
         input: TerminateInstancesRequest,
-    ) -> Result<TerminateInstancesResult, TerminateInstancesError>;
+    ) -> Result<TerminateInstancesResult, RusotoError<TerminateInstancesError>>;
 }
 
 pub struct AwsEc2Client {
@@ -71,39 +74,42 @@ impl Ec2Wrapper for AwsEc2Client {
     fn describe_images(
         &self,
         input: DescribeImagesRequest,
-    ) -> Result<DescribeImagesResult, DescribeImagesError> {
+    ) -> Result<DescribeImagesResult, RusotoError<DescribeImagesError>> {
         self.ec2.describe_images(input).sync()
     }
 
     fn describe_instances(
         &self,
         input: DescribeInstancesRequest,
-    ) -> Result<DescribeInstancesResult, DescribeInstancesError> {
+    ) -> Result<DescribeInstancesResult, RusotoError<DescribeInstancesError>> {
         self.ec2.describe_instances(input).sync()
     }
 
-    fn run_instances(&self, input: RunInstancesRequest) -> Result<Reservation, RunInstancesError> {
+    fn run_instances(
+        &self,
+        input: RunInstancesRequest,
+    ) -> Result<Reservation, RusotoError<RunInstancesError>> {
         self.ec2.run_instances(input).sync()
     }
 
     fn start_instances(
         &self,
         input: StartInstancesRequest,
-    ) -> Result<StartInstancesResult, StartInstancesError> {
+    ) -> Result<StartInstancesResult, RusotoError<StartInstancesError>> {
         self.ec2.start_instances(input).sync()
     }
 
     fn stop_instances(
         &self,
         input: StopInstancesRequest,
-    ) -> Result<StopInstancesResult, StopInstancesError> {
+    ) -> Result<StopInstancesResult, RusotoError<StopInstancesError>> {
         self.ec2.stop_instances(input).sync()
     }
 
     fn terminate_instances(
         &self,
         input: TerminateInstancesRequest,
-    ) -> Result<TerminateInstancesResult, TerminateInstancesError> {
+    ) -> Result<TerminateInstancesResult, RusotoError<TerminateInstancesError>> {
         self.ec2.terminate_instances(input).sync()
     }
 }

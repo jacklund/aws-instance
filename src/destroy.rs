@@ -1,11 +1,7 @@
-use super::{ec2_wrapper, util};
+use crate::{ec2_wrapper, util, Result};
 use rusoto_ec2;
-use std::error::Error;
 
-pub fn destroy_instance(
-    ec2_client: &ec2_wrapper::Ec2Wrapper,
-    name: &str,
-) -> Result<(), Box<Error>> {
+pub fn destroy_instance(ec2_client: &ec2_wrapper::Ec2Wrapper, name: &str) -> Result<()> {
     match util::get_instance_by_name(ec2_client, name)? {
         Some(instance) => {
             let instance_id = instance.instance_id.unwrap();

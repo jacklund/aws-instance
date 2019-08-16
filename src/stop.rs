@@ -1,9 +1,8 @@
 extern crate rusoto_ec2;
 
-use super::{ec2_wrapper, util};
-use std::error::Error;
+use crate::{ec2_wrapper, util, Result};
 
-pub fn stop(ec2_client: &ec2_wrapper::Ec2Wrapper, name: &str) -> Result<(), Box<Error>> {
+pub fn stop(ec2_client: &ec2_wrapper::Ec2Wrapper, name: &str) -> Result<()> {
     debug!("Calling get_instance_by_name({:?})", name);
     match util::get_instance_by_name(ec2_client, name)? {
         Some(instance) => {

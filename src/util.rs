@@ -2,7 +2,7 @@ extern crate rusoto_core;
 extern crate rusoto_credential;
 extern crate rusoto_ec2;
 
-use super::ec2_wrapper;
+use crate::{ec2_wrapper, Result};
 
 pub fn get_name(instance: &rusoto_ec2::Instance) -> String {
     match instance.tags {
@@ -39,7 +39,7 @@ pub fn get_public_ip_address(instance: &rusoto_ec2::Instance) -> Option<String> 
 pub fn get_instance_by_name(
     ec2_client: &ec2_wrapper::Ec2Wrapper,
     name: &str,
-) -> Result<Option<rusoto_ec2::Instance>, rusoto_ec2::DescribeInstancesError> {
+) -> Result<Option<rusoto_ec2::Instance>> {
     let mut request = rusoto_ec2::DescribeInstancesRequest::default();
     let filter = rusoto_ec2::Filter {
         name: Some("tag:Name".to_string()),
@@ -60,7 +60,7 @@ pub fn get_instance_by_name(
 
 pub fn get_all_instances(
     ec2_client: &ec2_wrapper::Ec2Wrapper,
-) -> Result<Vec<rusoto_ec2::Instance>, rusoto_ec2::DescribeInstancesError> {
+) -> Result<Vec<rusoto_ec2::Instance>> {
     let request = rusoto_ec2::DescribeInstancesRequest {
         dry_run: Some(false),
         filters: None,
