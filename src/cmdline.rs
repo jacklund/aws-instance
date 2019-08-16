@@ -17,7 +17,7 @@ pub struct CmdLineOptions {
 
 #[derive(Debug, StructOpt)]
 pub enum SubCommands {
-    #[structopt(name = "create")]
+    #[structopt(name = "create", about = "Create a named AWS instance")]
     Create {
         #[structopt(name = "NAME")]
         name: String,
@@ -41,13 +41,13 @@ pub enum SubCommands {
         security_group_ids: Vec<String>,
     },
 
-    #[structopt(name = "destroy")]
+    #[structopt(name = "destroy", about = "Destroy an AWS instance by name")]
     Destroy { name: String },
 
-    #[structopt(name = "list")]
+    #[structopt(name = "list", about = "List AWS instances")]
     List,
 
-    #[structopt(name = "list-amis")]
+    #[structopt(name = "list-amis", about = "List AMIs")]
     ListAmis {
         #[structopt(long, default_value = "x86_64")]
         architecture: String,
@@ -59,16 +59,16 @@ pub enum SubCommands {
         search: Option<String>,
     },
 
-    #[structopt(name = "ssh")]
+    #[structopt(name = "ssh", about = "SSH into an instance")]
     Ssh { name: String, sshopts: Vec<String> },
 
-    #[structopt(name = "start")]
+    #[structopt(name = "start", about = "Start a stopped instance")]
     Start {
         #[structopt(name = "NAME")]
         name: String,
     },
 
-    #[structopt(name = "stop")]
+    #[structopt(name = "stop", about = "Stop a running instance")]
     Stop {
         #[structopt(name = "NAME")]
         name: String,
