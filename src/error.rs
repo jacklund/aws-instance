@@ -68,6 +68,9 @@ pub enum AwsInstanceError {
         instance_name: String,
         message: String,
     },
+
+    #[snafu(display("Profile named {} not found", profile_name))]
+    ProfileNotFoundError { profile_name: String },
 }
 
 #[derive(Debug, Deserialize)]

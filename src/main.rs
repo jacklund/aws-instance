@@ -46,12 +46,13 @@ use crate::stop::stop;
 pub use crate::error::{AwsInstanceError, Result};
 pub use crate::util::print_state_changes;
 
-fn get_profile(profile_name: &str, config_file: &ConfigFileReader) -> Profile {
-    let profile = config_file
-        .get_profile(profile_name)
-        .unwrap_or_else(|| panic!("No profile named {} found", profile_name));
-
-    profile.clone()
+fn get_profile(profile_name: &str, config_file: &ConfigFileReader) -> Result<Profile> {
+    match config_file.get_profile(profile_name) {
+        Some(profile) => Ok(profile.clone()),
+        None => Err(AwsInstanceError::ProfileNotFoundError {
+            profile_name: profile_name.into(),
+        }),
+    }
 }
 
 fn main() {
