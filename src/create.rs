@@ -3,38 +3,42 @@ use rusoto_ec2::{
     IamInstanceProfileSpecification, Reservation, RunInstancesRequest, Tag, TagSpecification,
 };
 
+pub struct CreateOptions {
+    pub name: String,
+    pub ami_id: String,
+    pub ebs_optimized: bool,
+    pub iam_profile: Option<String>,
+    pub instance_type: Option<String>,
+    pub keypair_name: Option<String>,
+    pub security_group_ids: Vec<String>,
+}
+
 pub fn create_instance(
     ec2_client: &dyn ec2_wrapper::Ec2Wrapper,
-    name: &str,
-    ami_id: &str,
-    ebs_optimized: bool,
-    iam_profile: Option<String>,
-    instance_type: Option<String>,
-    keypair_name: Option<String>,
-    security_group_ids: Vec<String>,
+    options: CreateOptions,
 ) -> Result<Reservation> {
-    match util::get_instance_by_name(ec2_client, name)? {
+    match util::get_instance_by_name(ec2_client, &options.name)? {
         Some(_) => Err(AwsInstanceError::CreateInstanceError {
-            instance_name: name.into(),
+            instance_name: options.name.into(),
             message: "Instance with that name already exists".into(),
         }),
         None => {
             let mut request = RunInstancesRequest::default();
             request.min_count = 1;
             request.max_count = 1;
-            request.image_id = Some(ami_id.into());
-            request.ebs_optimized = Some(ebs_optimized);
+            request.image_id = Some(options.ami_id.into());
+            request.ebs_optimized = Some(options.ebs_optimized);
             let mut iam_instance_profile = IamInstanceProfileSpecification::default();
-            iam_instance_profile.name = iam_profile;
+            iam_instance_profile.name = options.iam_profile;
             request.iam_instance_profile = Some(iam_instance_profile);
-            request.instance_type = instance_type;
-            request.key_name = keypair_name;
-            request.security_group_ids = Some(security_group_ids);
+            request.instance_type = options.instance_type;
+            request.key_name = options.keypair_name;
+            request.security_group_ids = Some(options.security_group_ids);
             let name_tag_spec = TagSpecification {
                 resource_type: Some("instance".to_string()),
                 tags: Some(vec![Tag {
                     key: Some("Name".to_string()),
-                    value: Some(name.to_string()),
+                    value: Some(options.name.to_string()),
                 }]),
             };
             match request.tag_specifications {

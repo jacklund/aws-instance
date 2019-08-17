@@ -102,8 +102,8 @@ impl Display for AwsXmlError {
         write!(
             f,
             "{}\nError code: {}",
-            self.message.clone().unwrap_or("None".into()),
-            self.code.clone().unwrap_or("None".into())
+            self.message.clone().unwrap_or_else(|| "None".into()),
+            self.code.clone().unwrap_or_else(|| "None".into())
         )
     }
 }

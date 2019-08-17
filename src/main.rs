@@ -34,7 +34,7 @@ use std::str;
 use std::str::FromStr;
 
 use crate::cmdline::{parse_command_line, SubCommands};
-use crate::create::create_instance;
+use crate::create::{create_instance, CreateOptions};
 use crate::destroy::destroy_instance;
 use crate::list::list;
 use crate::list_amis::list_amis;
@@ -68,8 +68,8 @@ fn run_commands() -> Result<()> {
     let options = parse_command_line();
 
     let config_file = ConfigFileReader::new();
-    let profile_name = options.profile.or(Some("default".into())).unwrap();
-    let profile = get_profile(&profile_name, &config_file);
+    let profile_name = options.profile.or_else(|| Some("default".into())).unwrap();
+    let profile = get_profile(&profile_name, &config_file)?;
     let region = match options.region {
         Some(region_name) => Region::from_str(&region_name)?,
         None => profile.region,
@@ -114,13 +114,15 @@ fn run_commands() -> Result<()> {
             }
             if let Err(error) = create_instance(
                 &ec2_wrapper,
-                &name,
-                &ami_id,
-                ebs_optimized,
-                iam_profile,
-                instance_type,
-                keypair_name,
-                security_group_ids,
+                CreateOptions {
+                    name,
+                    ami_id,
+                    ebs_optimized,
+                    iam_profile,
+                    instance_type,
+                    keypair_name,
+                    security_group_ids,
+                },
             ) {
                 eprintln!("{}", error);
             }
