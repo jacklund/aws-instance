@@ -29,23 +29,13 @@ mod stop;
 mod util;
 
 use rusoto_core::Region;
-use std::str;
 use std::str::FromStr;
 
 use crate::cmdline::parse_command_line;
-use crate::profile::{ConfigFileReader, Profile};
+use crate::profile::{get_profile, ConfigFileReader, Profile};
 
 pub use crate::error::{AwsInstanceError, Result};
 pub use crate::util::print_state_changes;
-
-fn get_profile(profile_name: &str, config_file: &ConfigFileReader) -> Result<Profile> {
-    match config_file.get_profile(profile_name) {
-        Some(profile) => Ok(profile.clone()),
-        None => Err(AwsInstanceError::ProfileNotFoundError {
-            profile_name: profile_name.into(),
-        }),
-    }
-}
 
 fn main() {
     env_logger::init();

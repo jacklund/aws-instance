@@ -8,6 +8,8 @@ use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
 use std::str::FromStr;
 
+use crate::{AwsInstanceError, Result};
+
 type ConfigMap = BTreeMap<String, Profile>;
 
 lazy_static! {
@@ -56,6 +58,15 @@ impl Profile {
             }
             _ => (),
         }
+    }
+}
+
+pub fn get_profile(profile_name: &str, config_file: &ConfigFileReader) -> Result<Profile> {
+    match config_file.get_profile(profile_name) {
+        Some(profile) => Ok(profile.clone()),
+        None => Err(AwsInstanceError::ProfileNotFoundError {
+            profile_name: profile_name.into(),
+        }),
     }
 }
 
