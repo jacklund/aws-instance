@@ -1,13 +1,13 @@
 use std::collections::HashMap;
 use structopt::StructOpt;
 
-use crate::create::{create_instance, CreateOptions};
-use crate::destroy::destroy_instance;
-use crate::list::list;
-use crate::list_amis::list_amis;
-use crate::ssh::ssh;
-use crate::start::start;
-use crate::stop::stop;
+use crate::commands::create::{create_instance, CreateOptions};
+use crate::commands::destroy::destroy_instance;
+use crate::commands::list::list;
+use crate::commands::list_amis::list_amis;
+use crate::commands::ssh::ssh;
+use crate::commands::start::start;
+use crate::commands::stop::stop;
 use crate::Result;
 use crate::{ec2_wrapper, Profile};
 

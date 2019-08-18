@@ -16,16 +16,10 @@ extern crate snafu;
 extern crate structopt;
 
 mod cmdline;
-mod create;
-mod destroy;
+mod commands;
 mod ec2_wrapper;
 mod error;
-mod list;
-mod list_amis;
 mod profile;
-mod ssh;
-mod start;
-mod stop;
 mod util;
 
 use rusoto_core::Region;
