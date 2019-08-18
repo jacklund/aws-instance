@@ -178,7 +178,7 @@ impl SubCommands {
                 },
             )?;
         } else {
-            panic!("Unexpected value in list_amis: {:?}", self);
+            panic!("Unexpected value in create: {:?}", self);
         }
 
         Ok(())
@@ -197,7 +197,7 @@ impl SubCommands {
             }
             ssh(ec2_wrapper, &name, &mysshopts)?;
         } else {
-            panic!("Unexpected value in list_amis: {:?}", self);
+            panic!("Unexpected value in ssh: {:?}", self);
         }
 
         Ok(())
