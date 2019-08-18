@@ -19,14 +19,14 @@ pub fn create_instance(
 ) -> Result<Reservation> {
     match util::get_instance_by_name(ec2_client, &options.name)? {
         Some(_) => Err(AwsInstanceError::CreateInstanceError {
-            instance_name: options.name.into(),
+            instance_name: options.name,
             message: "Instance with that name already exists".into(),
         }),
         None => {
             let mut request = RunInstancesRequest::default();
             request.min_count = 1;
             request.max_count = 1;
-            request.image_id = Some(options.ami_id.into());
+            request.image_id = Some(options.ami_id);
             request.ebs_optimized = Some(options.ebs_optimized);
             let mut iam_instance_profile = IamInstanceProfileSpecification::default();
             iam_instance_profile.name = options.iam_profile;

@@ -2,7 +2,7 @@ extern crate rusoto_core;
 extern crate rusoto_credential;
 extern crate rusoto_ec2;
 
-use crate::{ec2_wrapper, util, Result};
+use crate::{ec2_wrapper, util, AwsInstanceError, Result};
 use std::process::{exit, Command};
 
 pub fn ssh(
@@ -14,16 +14,18 @@ pub fn ssh(
     let instance = match util::get_instance_by_name(ec2_client, name)? {
         Some(instance) => instance,
         None => {
-            eprintln!("Instance named '{}' not found", name);
-            exit(1);
+            return Err(AwsInstanceError::InstanceNotFoundError {
+                instance_name: name.into(),
+            });
         }
     };
     debug!("Calling util::get_public_ip_address");
     let ip_address = match util::get_public_ip_address(&instance) {
         Some(ip_address) => ip_address,
         None => {
-            eprintln!("No public IP address found for '{}' - is it stopped?", name);
-            exit(1);
+            return Err(AwsInstanceError::IPAddressNotFoundError {
+                instance_name: name.into(),
+            });
         }
     };
 

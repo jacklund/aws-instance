@@ -71,6 +71,12 @@ pub enum AwsInstanceError {
 
     #[snafu(display("Profile named {} not found", profile_name))]
     ProfileNotFoundError { profile_name: String },
+
+    #[snafu(display("Instance named {} not found", instance_name))]
+    InstanceNotFoundError { instance_name: String },
+
+    #[snafu(display("Public IP address not found for {} - is it stopped?", instance_name))]
+    IPAddressNotFoundError { instance_name: String },
 }
 
 #[derive(Debug, Deserialize)]

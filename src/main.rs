@@ -29,19 +29,11 @@ mod stop;
 mod util;
 
 use rusoto_core::Region;
-use std::collections::HashMap;
 use std::str;
 use std::str::FromStr;
 
-use crate::cmdline::{parse_command_line, SubCommands};
-use crate::create::{create_instance, CreateOptions};
-use crate::destroy::destroy_instance;
-use crate::list::list;
-use crate::list_amis::list_amis;
+use crate::cmdline::parse_command_line;
 use crate::profile::{ConfigFileReader, Profile};
-use crate::ssh::ssh;
-use crate::start::start;
-use crate::stop::stop;
 
 pub use crate::error::{AwsInstanceError, Result};
 pub use crate::util::print_state_changes;
@@ -72,86 +64,11 @@ fn run_commands() -> Result<()> {
     let profile = get_profile(&profile_name, &config_file)?;
     let region = match options.region {
         Some(region_name) => Region::from_str(&region_name)?,
-        None => profile.region,
+        None => profile.region.clone(),
     };
 
     let ec2_wrapper = ec2_wrapper::AwsEc2Client::new(region, &profile_name);
-    match options.subcommand {
-        SubCommands::List => list(&ec2_wrapper)?,
-
-        SubCommands::ListAmis {
-            architecture,
-            image_id,
-            search,
-        } => {
-            let mut filters: HashMap<String, Vec<String>> = HashMap::new();
-            filters.insert(
-                "architecture".into(),
-                architecture.split(',').map(|s| s.into()).collect(),
-            );
-            if let Some(image_id) = image_id {
-                filters.insert(
-                    "image_id".into(),
-                    image_id.split(',').map(|s| s.into()).collect(),
-                );
-            }
-            list_amis(&ec2_wrapper, &filters, search)?;
-        }
-
-        SubCommands::Create {
-            name,
-            ami_id,
-            ebs_optimized,
-            iam_profile,
-            mut instance_type,
-            mut keypair_name,
-            mut security_group_ids,
-        } => {
-            instance_type = instance_type.or(profile.default_instance_type);
-            keypair_name = keypair_name.or(profile.keypair);
-            if security_group_ids.is_empty() && profile.security_groups.is_some() {
-                security_group_ids = profile.security_groups.unwrap();
-            }
-            if let Err(error) = create_instance(
-                &ec2_wrapper,
-                CreateOptions {
-                    name,
-                    ami_id,
-                    ebs_optimized,
-                    iam_profile,
-                    instance_type,
-                    keypair_name,
-                    security_group_ids,
-                },
-            ) {
-                eprintln!("{}", error);
-            }
-        }
-
-        SubCommands::Destroy { name } => {
-            destroy_instance(&ec2_wrapper, &name)?;
-        }
-
-        SubCommands::Ssh { name, mut sshopts } => {
-            if profile.ssh_key.exists() && !sshopts.contains(&("-i".into())) {
-                debug!(
-                    "Adding -i {} to ssh opts",
-                    profile.ssh_key.to_str().unwrap()
-                );
-                sshopts.push("-i".into());
-                sshopts.push(profile.ssh_key.to_str().unwrap().into());
-            }
-            ssh(&ec2_wrapper, &name, &sshopts)?;
-        }
-
-        SubCommands::Start { name } => {
-            start(&ec2_wrapper, &name)?;
-        }
-
-        SubCommands::Stop { name } => {
-            stop(&ec2_wrapper, &name)?;
-        }
-    }
+    options.subcommand.run(&ec2_wrapper, profile)?;
 
     Ok(())
 }
