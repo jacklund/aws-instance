@@ -1,3 +1,4 @@
+use chrono;
 use rusoto_core::request::HttpDispatchError;
 use rusoto_core::{CredentialsError, RusotoError};
 use serde_xml_rs;
@@ -24,7 +25,7 @@ pub enum AwsInstanceError {
     Service { message: String },
 
     #[snafu(display("Parse error: {}", message))]
-    ParseError { message: String },
+    RusotoParseError { message: String },
 
     #[snafu(display("Validation error: {}", message))]
     Validation { message: String },
@@ -77,6 +78,9 @@ pub enum AwsInstanceError {
 
     #[snafu(display("Public IP address not found for {} - is it stopped?", instance_name))]
     IPAddressNotFoundError { instance_name: String },
+
+    #[snafu(display("Error parsing date: {}", error))]
+    DateParseError { error: chrono::ParseError },
 }
 
 #[derive(Debug, Deserialize)]
@@ -131,7 +135,7 @@ where
             },
             RusotoError::HttpDispatch(error) => AwsInstanceError::HttpDispatch { source: error },
             RusotoError::Credentials(error) => AwsInstanceError::Credentials { source: error },
-            RusotoError::ParseError(msg) => AwsInstanceError::ParseError { message: msg },
+            RusotoError::ParseError(msg) => AwsInstanceError::RusotoParseError { message: msg },
             RusotoError::Validation(msg) => AwsInstanceError::Validation { message: msg },
             RusotoError::Unknown(response) => {
                 let xml_response: AwsXmlResponse =
@@ -158,5 +162,11 @@ impl From<rusoto_ec2::DescribeInstancesError> for AwsInstanceError {
 impl From<rusoto_ec2::DescribeImagesError> for AwsInstanceError {
     fn from(e: rusoto_ec2::DescribeImagesError) -> Self {
         AwsInstanceError::DescribeImagesError { source: e }
+    }
+}
+
+impl From<chrono::ParseError> for AwsInstanceError {
+    fn from(e: chrono::ParseError) -> Self {
+        AwsInstanceError::DateParseError { error: e }
     }
 }
