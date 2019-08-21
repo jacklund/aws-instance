@@ -93,6 +93,10 @@ pub enum SubCommands {
         /// Instance name
         name: String,
 
+        #[structopt(long, short)]
+        /// User name to log in as
+        username: String,
+
         /// SSH options
         sshopts: Vec<String>,
     },
@@ -211,7 +215,12 @@ impl SubCommands {
     }
 
     fn ssh(&self, ec2_wrapper: &dyn ec2_wrapper::Ec2Wrapper, profile: Profile) -> Result<()> {
-        if let SubCommands::Ssh { name, sshopts } = self {
+        if let SubCommands::Ssh {
+            name,
+            username,
+            sshopts,
+        } = self
+        {
             let mut mysshopts = sshopts.clone();
             if profile.ssh_key.exists() && !sshopts.contains(&("-i".into())) {
                 debug!(
@@ -221,7 +230,7 @@ impl SubCommands {
                 mysshopts.push("-i".into());
                 mysshopts.push(profile.ssh_key.to_str().unwrap().into());
             }
-            ssh(ec2_wrapper, &name, &mysshopts)?;
+            ssh(ec2_wrapper, &name, &username, &mysshopts)?;
         } else {
             panic!("Unexpected value in ssh: {:?}", self);
         }

@@ -8,6 +8,7 @@ use std::process::{exit, Command};
 pub fn ssh(
     ec2_client: &dyn ec2_wrapper::Ec2Wrapper,
     name: &str,
+    username: &str,
     ssh_opts: &[String],
 ) -> Result<()> {
     debug!("Calling util::get_instance_by_name({:?})", name);
@@ -35,7 +36,7 @@ pub fn ssh(
     );
     let mut child = Command::new("ssh")
         .arg(ip_address)
-        .args(vec!["-l", "admin"])
+        .args(vec!["-l", username])
         .args(ssh_opts)
         .spawn()
         .expect("SSH Error");
