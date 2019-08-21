@@ -31,29 +31,44 @@ pub enum SubCommands {
     #[structopt(name = "create", about = "Create a named AWS instance")]
     Create {
         #[structopt(name = "NAME")]
+        /// Instance name
         name: String,
 
         #[structopt(name = "AMI-ID")]
+        /// AMI Image ID to use
         ami_id: String,
 
-        #[structopt(short, long = "ebs-optimized")]
+        #[structopt(
+            short,
+            long = "ebs-optimized",
+            parse(try_from_str),
+            default_value = "false"
+        )]
+        /// Is it EBS optimized?
         ebs_optimized: bool,
 
         #[structopt(short, long = "iam-profile")]
+        /// IAM profile to use
         iam_profile: Option<String>,
 
         #[structopt(short = "t", long = "instance-type")]
+        /// Instance type [default: m1.small]
         instance_type: Option<String>,
 
         #[structopt(short, long = "keypair")]
+        /// Key pair to use to connect
         keypair_name: Option<String>,
 
         #[structopt(short, long = "security-groups")]
+        /// Security groups for the instance
         security_group_ids: Vec<String>,
     },
 
     #[structopt(name = "destroy", about = "Destroy an AWS instance by name")]
-    Destroy { name: String },
+    Destroy {
+        /// Instance name
+        name: String,
+    },
 
     #[structopt(name = "list", about = "List AWS instances")]
     List,
@@ -61,27 +76,38 @@ pub enum SubCommands {
     #[structopt(name = "list-amis", about = "List AMIs")]
     ListAmis {
         #[structopt(long, default_value = "x86_64")]
+        /// Instance architecture
         architecture: String,
 
         #[structopt(long, name = "image-id")]
+        /// AMI Image ID
         image_id: Option<String>,
 
         #[structopt(long)]
+        /// Filter images by image name using regular expression
         search: Option<String>,
     },
 
     #[structopt(name = "ssh", about = "SSH into an instance")]
-    Ssh { name: String, sshopts: Vec<String> },
+    Ssh {
+        /// Instance name
+        name: String,
+
+        /// SSH options
+        sshopts: Vec<String>,
+    },
 
     #[structopt(name = "start", about = "Start a stopped instance")]
     Start {
         #[structopt(name = "NAME")]
+        /// Instance name
         name: String,
     },
 
     #[structopt(name = "stop", about = "Stop a running instance")]
     Stop {
         #[structopt(name = "NAME")]
+        /// Instance name
         name: String,
     },
 }

@@ -1,4 +1,5 @@
 use chrono;
+use regex;
 use rusoto_core::request::HttpDispatchError;
 use rusoto_core::{CredentialsError, RusotoError};
 use serde_xml_rs;
@@ -81,6 +82,9 @@ pub enum AwsInstanceError {
 
     #[snafu(display("Error parsing date: {}", error))]
     DateParseError { error: chrono::ParseError },
+
+    #[snafu(display("Error parsing search string: {}", error))]
+    RegexParseError { error: regex::Error },
 }
 
 #[derive(Debug, Deserialize)]
@@ -168,5 +172,11 @@ impl From<rusoto_ec2::DescribeImagesError> for AwsInstanceError {
 impl From<chrono::ParseError> for AwsInstanceError {
     fn from(e: chrono::ParseError) -> Self {
         AwsInstanceError::DateParseError { error: e }
+    }
+}
+
+impl From<regex::Error> for AwsInstanceError {
+    fn from(e: regex::Error) -> Self {
+        AwsInstanceError::RegexParseError { error: e }
     }
 }

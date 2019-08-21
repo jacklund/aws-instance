@@ -1,5 +1,6 @@
 use crate::{ec2_wrapper, Result};
 use chrono::{DateTime, SecondsFormat, Utc};
+use regex::Regex;
 use rusoto_ec2::{DescribeImagesRequest, Filter, Image};
 use std::collections::HashMap;
 
@@ -68,17 +69,21 @@ pub fn list_amis(
     info!("Request: {:?}", request);
 
     let mut image_info: Vec<AmiInfo> = vec![];
+    let search_regex: Option<Regex> = match search_string {
+        None => None,
+        Some(ref search) => Some(Regex::new(search)?),
+    };
     match ec2_client.describe_images(request)?.images {
         Some(images) => {
             info!("Call returned {} images", images.len());
             for image in images {
-                match search_string {
+                match search_regex {
                     None => {
                         image_info.push(AmiInfo::from_aws(image)?);
                     }
                     Some(ref search) => {
                         if let Some(name) = image.clone().name {
-                            if name.contains(search) {
+                            if search.is_match(&name) {
                                 image_info.push(AmiInfo::from_aws(image)?);
                             }
                         }
