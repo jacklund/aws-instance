@@ -31,8 +31,8 @@ pub fn ssh(
     };
 
     debug!(
-        "Calling command 'ssh {} -l admin {:?}",
-        ip_address, ssh_opts
+        "Calling command 'ssh {} -l {} {:?}",
+        ip_address, username, ssh_opts
     );
     let mut child = Command::new("ssh")
         .arg(ip_address)
