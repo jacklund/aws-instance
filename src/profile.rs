@@ -22,7 +22,7 @@ lazy_static! {
 pub struct Profile {
     pub region: Region,
     pub keypair: Option<String>,
-    pub ssh_key: PathBuf,
+    pub ssh_key: Option<String>,
     pub default_instance_type: Option<String>,
     pub security_groups: Option<Vec<String>>,
 }
@@ -32,7 +32,7 @@ impl Default for Profile {
         Profile {
             region: Region::default(),
             keypair: None,
-            ssh_key: PathBuf::default(),
+            ssh_key: None,
             default_instance_type: None,
             security_groups: None,
         }
@@ -46,7 +46,7 @@ impl Profile {
                 self.region = Region::from_str(value).expect("Error parsing AWS config file");
             }
             "keypair" => self.keypair = Some(value.to_string()),
-            "key" => self.ssh_key = PathBuf::from(value),
+            "key" => self.ssh_key = Some(value.into()),
             "instance-type" => self.default_instance_type = Some(value.to_string()),
             "security-groups" => {
                 self.security_groups = Some(

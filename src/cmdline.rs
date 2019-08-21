@@ -97,6 +97,10 @@ pub enum SubCommands {
         /// User name to log in as
         username: String,
 
+        #[structopt(long, short)]
+        /// Path to SSH key to use
+        key: Option<String>,
+
         /// SSH options
         sshopts: Vec<String>,
     },
@@ -218,17 +222,17 @@ impl SubCommands {
         if let SubCommands::Ssh {
             name,
             username,
+            key,
             sshopts,
         } = self
         {
             let mut mysshopts = sshopts.clone();
-            if profile.ssh_key.exists() && !sshopts.contains(&("-i".into())) {
-                debug!(
-                    "Adding -i {} to ssh opts",
-                    profile.ssh_key.to_str().unwrap()
-                );
-                mysshopts.push("-i".into());
-                mysshopts.push(profile.ssh_key.to_str().unwrap().into());
+            if let Some(keypath) = key.clone().or(profile.ssh_key) {
+                if !sshopts.contains(&("-i".into())) {
+                    debug!("Adding -i {:?} to ssh opts", keypath);
+                    mysshopts.push("-i".into());
+                    mysshopts.push(keypath);
+                }
             }
             ssh(ec2_wrapper, &name, &username, &mysshopts)?;
         } else {
