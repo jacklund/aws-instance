@@ -14,6 +14,10 @@ use crate::{ec2_wrapper, Profile};
 #[derive(Debug, StructOpt)]
 #[structopt(name = "aws-instance", about = "Manage AWS instances")]
 pub struct CmdLineOptions {
+    #[structopt(long = "config-file", short = "C")]
+    /// Path to config file
+    pub config_file: Option<String>,
+
     #[structopt(short, long)]
     /// Set the AWS profile to use
     pub profile: Option<String>,

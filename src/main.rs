@@ -44,7 +44,7 @@ fn main() {
 fn run_commands() -> Result<()> {
     let options = parse_command_line();
 
-    let config_file = ConfigFileReader::new();
+    let config_file = ConfigFileReader::new(options.config_file);
     let profile_name = options.profile.or_else(|| Some("default".into())).unwrap();
     let profile = get_profile(&profile_name, &config_file)?;
     let region = match options.region {

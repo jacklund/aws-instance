@@ -83,8 +83,11 @@ pub fn get_aws_config_file_path() -> PathBuf {
     }
 }
 
-pub fn get_our_config_file_path() -> PathBuf {
-    match env::var_os("AWS_INSTANCE_CONFIG_FILE") {
+pub fn get_our_config_file_path(config_file: Option<String>) -> PathBuf {
+    match config_file
+        .map(|s| PathBuf::from(s))
+        .or(env::var_os("AWS_INSTANCE_CONFIG_FILE").map(|s| PathBuf::from(s)))
+    {
         Some(value) => PathBuf::from(value),
         None => {
             let mut config_path = dirs::home_dir().expect("Home directory not found");
@@ -104,7 +107,7 @@ pub struct ConfigFileReader {
 }
 
 impl ConfigFileReader {
-    pub fn new() -> Self {
+    pub fn new(config_file: Option<String>) -> Self {
         let mut reader = ConfigFileReader {
             config_map: ConfigMap::default(),
             profile_name: None,
@@ -112,7 +115,7 @@ impl ConfigFileReader {
         };
 
         reader.parse(&get_aws_config_file_path(), &AWS_CONFIG_SECTION_REGEX);
-        reader.parse(&get_our_config_file_path(), &SECTION_REGEX);
+        reader.parse(&get_our_config_file_path(config_file), &SECTION_REGEX);
 
         reader
     }
