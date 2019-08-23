@@ -11,6 +11,8 @@ use crate::commands::stop::stop;
 use crate::Result;
 use crate::{ec2_wrapper, Profile};
 
+const DEFAULT_INSTANCE_TYPE: &str = "m1.small";
+
 #[derive(Debug, StructOpt)]
 #[structopt(name = "aws-instance", about = "Manage AWS instances")]
 pub struct CmdLineOptions {
@@ -210,7 +212,10 @@ impl SubCommands {
                     ami_id: ami_id.clone(),
                     ebs_optimized: *ebs_optimized,
                     iam_profile: iam_profile.clone(),
-                    instance_type: instance_type.clone().or(profile.default_instance_type),
+                    instance_type: instance_type
+                        .clone()
+                        .or(profile.default_instance_type)
+                        .or(Some(DEFAULT_INSTANCE_TYPE.into())),
                     keypair_name: keypair_name.clone().or(profile.keypair),
                     security_group_ids: my_security_groups,
                 },

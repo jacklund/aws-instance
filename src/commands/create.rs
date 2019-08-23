@@ -3,6 +3,7 @@ use rusoto_ec2::{
     IamInstanceProfileSpecification, Reservation, RunInstancesRequest, Tag, TagSpecification,
 };
 
+#[derive(Debug)]
 pub struct CreateOptions {
     pub name: String,
     pub ami_id: String,
