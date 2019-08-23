@@ -77,7 +77,11 @@ pub enum SubCommands {
     },
 
     #[structopt(name = "list", about = "List AWS instances")]
-    List,
+    List {
+        #[structopt(long)]
+        /// Whether to output as required by ansible inventory
+        ansible: bool,
+    },
 
     #[structopt(name = "list-amis", about = "List AMIs")]
     ListAmis {
@@ -133,7 +137,9 @@ pub fn parse_command_line() -> CmdLineOptions {
 impl SubCommands {
     pub fn run(&self, ec2_wrapper: &dyn ec2_wrapper::Ec2Wrapper, profile: Profile) -> Result<()> {
         match self {
-            SubCommands::List => list(ec2_wrapper)?,
+            SubCommands::List { .. } => {
+                self.list(ec2_wrapper)?;
+            }
 
             SubCommands::ListAmis { .. } => {
                 self.list_amis(ec2_wrapper)?;
@@ -159,6 +165,16 @@ impl SubCommands {
                 stop(ec2_wrapper, &name)?;
             }
         }
+        Ok(())
+    }
+
+    pub fn list(&self, ec2_wrapper: &dyn ec2_wrapper::Ec2Wrapper) -> Result<()> {
+        if let SubCommands::List { ansible } = self {
+            list(ec2_wrapper, *ansible)?;
+        } else {
+            panic!("Unexpected value in list_amis: {:?}", self);
+        }
+
         Ok(())
     }
 

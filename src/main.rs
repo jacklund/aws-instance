@@ -12,6 +12,7 @@ extern crate rusoto_credential;
 extern crate rusoto_ec2;
 #[macro_use]
 extern crate serde_derive;
+extern crate serde_json;
 extern crate serde_xml_rs;
 extern crate snafu;
 extern crate structopt;

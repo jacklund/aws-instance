@@ -2,6 +2,7 @@ use chrono;
 use regex;
 use rusoto_core::request::HttpDispatchError;
 use rusoto_core::{CredentialsError, RusotoError};
+use serde_json;
 use serde_xml_rs;
 use snafu::Snafu;
 use std::convert::From;
@@ -85,6 +86,9 @@ pub enum AwsInstanceError {
 
     #[snafu(display("Error parsing search string: {}", error))]
     RegexParseError { error: regex::Error },
+
+    #[snafu(display("Error parsing JSON: {}", error))]
+    JSONParseError { error: serde_json::Error },
 }
 
 #[derive(Debug, Deserialize)]
@@ -178,5 +182,11 @@ impl From<chrono::ParseError> for AwsInstanceError {
 impl From<regex::Error> for AwsInstanceError {
     fn from(e: regex::Error) -> Self {
         AwsInstanceError::RegexParseError { error: e }
+    }
+}
+
+impl From<serde_json::Error> for AwsInstanceError {
+    fn from(e: serde_json::Error) -> Self {
+        AwsInstanceError::JSONParseError { error: e }
     }
 }
