@@ -32,10 +32,6 @@ pub fn get_state(instance: &rusoto_ec2::Instance) -> String {
     }
 }
 
-pub fn get_public_ip_address(instance: &rusoto_ec2::Instance) -> Option<String> {
-    instance.public_ip_address.clone()
-}
-
 pub fn get_instance_by_name(
     ec2_client: &dyn ec2_wrapper::Ec2Wrapper,
     name: &str,

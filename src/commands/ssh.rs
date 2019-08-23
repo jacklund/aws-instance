@@ -21,7 +21,7 @@ pub fn ssh(
         }
     };
     debug!("Calling util::get_public_ip_address");
-    let ip_address = match util::get_public_ip_address(&instance) {
+    let ip_address = match instance.public_ip_address {
         Some(ip_address) => ip_address,
         None => {
             return Err(AwsInstanceError::IPAddressNotFoundError {
