@@ -176,7 +176,7 @@ impl SubCommands {
         if let SubCommands::List { ansible } = self {
             list(ec2_wrapper, *ansible)?;
         } else {
-            panic!("Unexpected value in list_amis: {:?}", self);
+            panic!("Unexpected value in list: {:?}", self);
         }
 
         Ok(())
