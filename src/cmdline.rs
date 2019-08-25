@@ -85,6 +85,10 @@ pub enum SubCommands {
 
     #[structopt(name = "list-amis", about = "List AMIs")]
     ListAmis {
+        #[structopt(long, short)]
+        /// Image name. You may use '?' and '*' to return multiple values
+        name: Option<String>,
+
         #[structopt(long, default_value = "x86_64")]
         /// Instance architecture
         architecture: String,
@@ -180,12 +184,17 @@ impl SubCommands {
 
     fn list_amis(&self, ec2_wrapper: &dyn ec2_wrapper::Ec2Wrapper) -> Result<()> {
         if let SubCommands::ListAmis {
+            name,
             architecture,
             image_id,
             search,
         } = self
         {
             let mut filters: HashMap<String, Vec<String>> = HashMap::new();
+            if let Some(name) = name {
+                filters.insert("name".into(), vec![name.into()]);
+            }
+
             filters.insert(
                 "architecture".into(),
                 architecture.split(',').map(|s| s.into()).collect(),

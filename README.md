@@ -129,10 +129,11 @@ FLAGS:
 OPTIONS:
         --architecture <architecture>    Instance architecture [default: x86_64]
         --image_id <image-id>            AMI Image ID
+    -n, --name <name>                    Image name. You may use '?' and '*' to return multiple values
         --search <search>                Filter images by image name using regular expression
 ```
 
-Note: This command can take a long time, because it has to filter the instances on the client side.
+Note: The `--search` option can take a long time, because it has to filter the instances on the client side.
 
 ### SSH
 
