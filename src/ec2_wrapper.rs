@@ -7,14 +7,16 @@ extern crate rusoto_ec2;
 use rusoto_core::{HttpClient, Region, RusotoError};
 use rusoto_credential::{DefaultCredentialsProvider, ProfileProvider};
 use rusoto_ec2::{
-    DescribeImagesError, DescribeImagesRequest, DescribeImagesResult, DescribeInstancesError,
-    DescribeInstancesRequest, DescribeInstancesResult, Ec2, Ec2Client, Reservation,
-    RunInstancesError, RunInstancesRequest, StartInstancesError, StartInstancesRequest,
-    StartInstancesResult, StopInstancesError, StopInstancesRequest, StopInstancesResult,
-    TerminateInstancesError, TerminateInstancesRequest, TerminateInstancesResult,
+    CreateTagsError, CreateTagsRequest, DescribeImagesError, DescribeImagesRequest,
+    DescribeImagesResult, DescribeInstancesError, DescribeInstancesRequest,
+    DescribeInstancesResult, Ec2, Ec2Client, Reservation, RunInstancesError, RunInstancesRequest,
+    StartInstancesError, StartInstancesRequest, StartInstancesResult, StopInstancesError,
+    StopInstancesRequest, StopInstancesResult, TerminateInstancesError, TerminateInstancesRequest,
+    TerminateInstancesResult,
 };
 
 pub trait Ec2Wrapper {
+    fn create_tags(&self, input: CreateTagsRequest) -> Result<(), RusotoError<CreateTagsError>>;
     fn describe_images(
         &self,
         input: DescribeImagesRequest,
@@ -71,6 +73,10 @@ impl AwsEc2Client {
 }
 
 impl Ec2Wrapper for AwsEc2Client {
+    fn create_tags(&self, input: CreateTagsRequest) -> Result<(), RusotoError<CreateTagsError>> {
+        self.ec2.create_tags(input).sync()
+    }
+
     fn describe_images(
         &self,
         input: DescribeImagesRequest,
