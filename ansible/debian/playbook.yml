@@ -97,3 +97,6 @@
     - name: Install neovim npm package
       command: npm install -g neovim
       become: yes
+
+      name: Install nvim plugins
+      command: nvim +'Pluginstall --sync' +qa
