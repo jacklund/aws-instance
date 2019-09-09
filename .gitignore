@@ -4,3 +4,7 @@
 Cargo.lock
 .DS_Store
 **/*.retry
+.terraform
+*.tfstate
+*.tfstate.backup
+*.tfstate.*.backup
