@@ -1,0 +1,60 @@
+# vim:ft=ansible:
+
+---
+- hosts: "{{ hosts }}"
+  tasks:
+    - name: Import common role
+      import_role:
+        name: common
+
+    - name: Install packages
+      apt:
+        name: "{{ packages }}"
+        update_cache: yes
+      vars:
+        packages:
+          - aptly
+          - build-essential
+          - git
+          - python3.7
+          - python-pip
+          - rubygems
+          - ruby-dev
+          - software-properties-common
+      become: yes
+
+    - name: Install neovim python2 module
+      command: pip install neovim
+      become: yes
+      notify:
+      - Install nvim plugins
+
+    - name: Install neovim python3 module
+      command: pip3.7 install neovim
+      become: yes
+      notify:
+      - Install nvim plugins
+
+    - name: Install neovim ruby gem
+      command: gem install neovim
+      become: yes
+      notify:
+      - Install nvim plugins
+
+    - name: Install rust
+      shell: "curl https://sh.rustup.rs -sSf | sh -s -- -y"
+
+    - name: Download nodejs
+      get_url:
+        url: "https://nodejs.org/dist/v10.16.3/node-v10.16.3-linux-x64.tar.xz"
+        dest: "{{ temp_dir.path }}"
+
+    - name: Install nodejs
+      command: "tar xJf {{ temp_dir.path }}/node-v10.16.3-linux-x64.tar.xz -C /usr/local/ --strip-components 1"
+      become: yes
+
+    - name: Install neovim npm package
+      command: npm install -g neovim
+      become: yes
+      notify:
+      - Install nvim plugins

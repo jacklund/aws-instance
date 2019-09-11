@@ -1,0 +1,73 @@
+# vim:ft=ansible:
+
+---
+- name: Install my own debian repo
+  apt_repository:
+    repo: deb [trusted=yes] https://aptly-repository.s3.amazonaws.com stretch main
+    state: present
+  become: yes
+
+- name: Download and install GPG key for aptly repo
+  shell: 'wget -qO - https://www.aptly.info/pubkey.txt | apt-key add -'
+  become: yes
+
+- name: Add aptly repository
+  apt_repository:
+    repo: 'deb http://repo.aptly.info/ squeeze main'
+    state: present
+  become: yes
+
+- name: Install packages
+  apt:
+    name: "{{ packages }}"
+    update_cache: yes
+  vars:
+    packages:
+      - ack
+      - htop
+      - tmux
+      - tree
+      - zsh
+  become: yes
+
+- name: Create temp directory
+  tempfile:
+    state: directory
+    suffix: temp
+  register: temp_dir
+
+- name: Download neovim
+  get_url:
+    url: "https://github.com/neovim/neovim/releases/download/v0.3.8/nvim-linux64.tar.gz"
+    dest: "{{ temp_dir.path }}"
+
+- name: Install neovim
+  command: "tar xzf {{ temp_dir.path }}/nvim-linux64.tar.gz -C /usr/local --strip-components 1"
+  become: yes
+
+- name: Add zsh as shell
+  command: add-shell /usr/bin/zsh
+  become: yes
+
+- name: Make admin's shell zsh
+  command: chsh --shell /usr/bin/zsh admin
+  become: yes
+
+- name: Download dotfiles
+  git:
+    repo: "https://github.com/jacklund/dotfiles.git"
+    dest: git/dotfiles
+
+- name: Install dotfiles
+  shell: ./install.sh
+  args:
+    chdir: git/dotfiles
+
+- name: Download FZF
+  git:
+    repo: "https://github.com/junegunn/fzf.git"
+    depth: 1
+    dest: .fzf
+
+- name: Install FZF
+  shell: .fzf/install --all
