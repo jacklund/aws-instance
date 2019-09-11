@@ -5,7 +5,17 @@
   tasks:
     - name: Install my own debian repo
       apt_repository:
-        repo: deb [trusted=yes] https://debian-stretch-repo.s3.amazonaws.com stable main
+        repo: deb [trusted=yes] https://aptly-repository.s3.amazonaws.com stretch main
+        state: present
+      become: yes
+
+    - name: Download and install GPG key for aptly repo
+      shell: 'wget -qO - https://www.aptly.info/pubkey.txt | apt-key add -'
+      become: yes
+
+    - name: Add aptly repository
+      apt_repository:
+        repo: 'deb http://repo.aptly.info/ squeeze main'
         state: present
       become: yes
 
@@ -16,6 +26,7 @@
       vars:
         packages:
           - ack
+          - aptly
           - build-essential
           - git
           - htop
@@ -23,6 +34,7 @@
           - python-pip
           - rubygems
           - ruby-dev
+          - software-properties-common
           - tmux
           - tree
           - zsh
