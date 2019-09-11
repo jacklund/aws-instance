@@ -1,0 +1,17 @@
+# vim:ft=ansible:
+
+---
+- hosts: "{{ hosts }}"
+  tasks:
+    - name: Import common role
+      import_role:
+        name: common
+
+    - name: Install tor
+      apt:
+        name: "{{ packages }}"
+        update_cache: yes
+      vars:
+        packages:
+          - tor
+      become: yes
