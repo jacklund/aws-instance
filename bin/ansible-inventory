@@ -1,0 +1,8 @@
+#!/bin/bash
+
+if [[ $1 = "--host" ]]; then
+  echo '{}'
+  exit 0
+fi
+
+aws-instance list --ansible
