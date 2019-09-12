@@ -2,16 +2,13 @@
 
 ---
 - hosts: "{{ hosts }}"
-  tasks:
-    - name: Import common role
-      import_role:
-        name: common
-
-    - name: Install tor
-      apt:
-        name: "{{ packages }}"
-        update_cache: yes
-      vars:
-        packages:
-          - tor
-      become: yes
+  vars:
+    tor_ContactInfo: thaddeus.184a611b@tryninja.io
+    tor_signingkeylifetime_days: '90'
+    tor_nickname: zippythetor
+    tor_RelayBandwidthRate: 75 KBytes
+    tor_RelayBandwidthBurst: 200 KBytes
+    tor_AccountingMax: 1 Gbytes
+    tor_AccountingStart: 'month 3 15:00'
+  roles:
+    - nusenu.relayor
