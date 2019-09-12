@@ -1,0 +1,14 @@
+# vim:ft=ansible:
+
+---
+- hosts: "{{ hosts }}"
+  vars:
+    tor_ContactInfo: "{{ contact_info }}"
+    tor_signingkeylifetime_days: "{{ signing_key_lifetime | default('90') }}"
+    tor_nickname: "{{ nickname }}"
+    tor_RelayBandwidthRate: "{{ bandwidth_rate | default('75 KBytes') }}"
+    tor_RelayBandwidthBurst: "{{ bandwidth_burst | default('200 KBytes') }}"
+    tor_AccountingMax: "{{ accounting_max | default('1 Gbytes') }}"
+    tor_AccountingStart: "{{ accounting_start | default('month 3 15:00') }}"
+  roles:
+    - nusenu.relayor
