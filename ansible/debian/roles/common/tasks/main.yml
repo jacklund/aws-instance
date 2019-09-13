@@ -1,5 +1,9 @@
 # vim:ft=ansible:
 
+#
+# Common ansible code
+#
+
 ---
 - name: Install my own debian repo
   apt_repository:

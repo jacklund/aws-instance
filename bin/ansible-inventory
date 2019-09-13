@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# Generate Ansible inventory using the aws-instance command
+
 if [[ $1 = "--host" ]]; then
   echo '{}'
   exit 0

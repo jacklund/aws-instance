@@ -1,5 +1,10 @@
 # vim:ft=ansible:
 
+#
+# Provision a build/development machine
+#   % ansible-playbook build.yml -e hosts=<hostname>
+#
+
 ---
 - hosts: "{{ hosts }}"
   tasks:

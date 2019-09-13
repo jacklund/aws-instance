@@ -1,5 +1,10 @@
 # vim:ft=ansible:
 
+# Ansible code to provision a Tor relay
+# Run as follows:
+#   % ansible-playbook tor_relay.yml -e hosts=<hostname> -u admin --become -e contact_info=<contact info> -e nickname=<nickname>
+#
+
 ---
 - hosts: "{{ hosts }}"
   vars:
