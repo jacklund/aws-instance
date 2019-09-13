@@ -20,7 +20,6 @@
         packages:
           - aptly
           - build-essential
-          - git
           - python3.7
           - python-pip
           - rubygems

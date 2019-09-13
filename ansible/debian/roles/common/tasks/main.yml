@@ -28,6 +28,7 @@
   vars:
     packages:
       - ack
+      - git
       - htop
       - tmux
       - tree
