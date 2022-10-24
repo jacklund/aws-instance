@@ -3,6 +3,8 @@ name = "aws-instance"
 version = "0.1.1"
 authors = ["Jack Lund <jackl@geekheads.net>"]
 edition = "2018"
+description = "Create and SSH into AWS instances"
+license = "MIT"
 
 [dependencies]
 clap = "2.33.0"
