@@ -8,8 +8,9 @@ use crate::commands::list_amis::list_amis;
 use crate::commands::ssh::ssh;
 use crate::commands::start::start;
 use crate::commands::stop::stop;
+use crate::Profile;
 use crate::Result;
-use crate::{ec2_wrapper, Profile};
+use rusoto_ec2::Ec2Client;
 
 const DEFAULT_INSTANCE_TYPE: &str = "m1.small";
 
@@ -139,42 +140,42 @@ pub fn parse_command_line() -> CmdLineOptions {
 }
 
 impl SubCommands {
-    pub fn run(&self, ec2_wrapper: &dyn ec2_wrapper::Ec2Wrapper, profile: Profile) -> Result<()> {
+    pub async fn run(&self, client: &Ec2Client, profile: Profile) -> Result<()> {
         match self {
             SubCommands::List { .. } => {
-                self.list(ec2_wrapper)?;
+                self.list(client).await?;
             }
 
             SubCommands::ListAmis { .. } => {
-                self.list_amis(ec2_wrapper)?;
+                self.list_amis(client).await?;
             }
 
             SubCommands::Create { .. } => {
-                self.create(ec2_wrapper, profile)?;
+                self.create(client, profile).await?;
             }
 
             SubCommands::Destroy { name } => {
-                destroy_instance(ec2_wrapper, &name)?;
+                destroy_instance(client, &name).await?;
             }
 
             SubCommands::Ssh { .. } => {
-                self.ssh(ec2_wrapper, profile)?;
+                self.ssh(client, profile).await?;
             }
 
             SubCommands::Start { name } => {
-                start(ec2_wrapper, &name)?;
+                start(client, &name).await?;
             }
 
             SubCommands::Stop { name } => {
-                stop(ec2_wrapper, &name)?;
+                stop(client, &name).await?;
             }
         }
         Ok(())
     }
 
-    pub fn list(&self, ec2_wrapper: &dyn ec2_wrapper::Ec2Wrapper) -> Result<()> {
+    pub async fn list(&self, client: &Ec2Client) -> Result<()> {
         if let SubCommands::List { ansible } = self {
-            list(ec2_wrapper, *ansible)?;
+            list(client, *ansible).await?;
         } else {
             panic!("Unexpected value in list: {:?}", self);
         }
@@ -182,7 +183,7 @@ impl SubCommands {
         Ok(())
     }
 
-    fn list_amis(&self, ec2_wrapper: &dyn ec2_wrapper::Ec2Wrapper) -> Result<()> {
+    async fn list_amis(&self, client: &Ec2Client) -> Result<()> {
         if let SubCommands::ListAmis {
             name,
             architecture,
@@ -205,7 +206,7 @@ impl SubCommands {
                     image_id.split(',').map(|s| s.into()).collect(),
                 );
             }
-            list_amis(ec2_wrapper, &filters, search.clone())?;
+            list_amis(client, &filters, search.clone()).await?;
         } else {
             panic!("Unexpected value in list_amis: {:?}", self);
         }
@@ -213,7 +214,7 @@ impl SubCommands {
         Ok(())
     }
 
-    fn create(&self, ec2_wrapper: &dyn ec2_wrapper::Ec2Wrapper, profile: Profile) -> Result<()> {
+    async fn create(&self, client: &Ec2Client, profile: Profile) -> Result<()> {
         if let SubCommands::Create {
             name,
             ami_id,
@@ -231,7 +232,7 @@ impl SubCommands {
                     security_group_ids.clone()
                 };
             create_instance(
-                ec2_wrapper,
+                client,
                 CreateOptions {
                     name: name.clone(),
                     ami_id: ami_id.clone(),
@@ -244,7 +245,8 @@ impl SubCommands {
                     keypair_name: keypair_name.clone().or(profile.keypair),
                     security_group_ids: my_security_groups,
                 },
-            )?;
+            )
+            .await?;
         } else {
             panic!("Unexpected value in create: {:?}", self);
         }
@@ -252,7 +254,7 @@ impl SubCommands {
         Ok(())
     }
 
-    fn ssh(&self, ec2_wrapper: &dyn ec2_wrapper::Ec2Wrapper, profile: Profile) -> Result<()> {
+    async fn ssh(&self, client: &Ec2Client, profile: Profile) -> Result<()> {
         if let SubCommands::Ssh {
             name,
             username,
@@ -263,12 +265,11 @@ impl SubCommands {
             let mut mysshopts = sshopts.clone();
             if let Some(keypath) = key.clone().or(profile.ssh_key) {
                 if !sshopts.contains(&("-i".into())) {
-                    debug!("Adding -i {:?} to ssh opts", keypath);
                     mysshopts.push("-i".into());
                     mysshopts.push(keypath);
                 }
             }
-            ssh(ec2_wrapper, &name, &username, &mysshopts)?;
+            ssh(client, &name, &username, &mysshopts).await?;
         } else {
             panic!("Unexpected value in ssh: {:?}", self);
         }

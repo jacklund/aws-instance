@@ -1,18 +1,14 @@
-extern crate rusoto_core;
-extern crate rusoto_credential;
-extern crate rusoto_ec2;
-
-use crate::{ec2_wrapper, util, AwsInstanceError, Result};
+use crate::{util, AwsInstanceError, Result};
+use rusoto_ec2::Ec2Client;
 use std::process::{exit, Command};
 
-pub fn ssh(
-    ec2_client: &dyn ec2_wrapper::Ec2Wrapper,
+pub async fn ssh(
+    ec2_client: &Ec2Client,
     name: &str,
     username: &str,
     ssh_opts: &[String],
 ) -> Result<()> {
-    debug!("Calling util::get_instance_by_name({:?})", name);
-    let instance = match util::get_instance_by_name(ec2_client, name)? {
+    let instance = match util::get_instance_by_name(ec2_client, name).await? {
         Some(instance) => instance,
         None => {
             return Err(AwsInstanceError::InstanceNotFoundError {
@@ -20,7 +16,6 @@ pub fn ssh(
             });
         }
     };
-    debug!("Calling util::get_public_ip_address");
     let ip_address = match instance.public_ip_address {
         Some(ip_address) => ip_address,
         None => {
@@ -30,10 +25,6 @@ pub fn ssh(
         }
     };
 
-    debug!(
-        "Calling command 'ssh {} -l {} {:?}",
-        ip_address, username, ssh_opts
-    );
     let mut child = Command::new("ssh")
         .arg(ip_address)
         .args(vec!["-l", username])

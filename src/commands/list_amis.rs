@@ -1,7 +1,7 @@
-use crate::{ec2_wrapper, Result};
+use crate::Result;
 use chrono::{DateTime, SecondsFormat, Utc};
 use regex::Regex;
-use rusoto_ec2::{DescribeImagesRequest, Filter, Image};
+use rusoto_ec2::{DescribeImagesRequest, Ec2, Ec2Client, Filter, Image};
 use std::collections::HashMap;
 
 struct AmiInfo {
@@ -49,8 +49,8 @@ fn print_option(option: &Option<String>) -> String {
     }
 }
 
-pub fn list_amis(
-    ec2_client: &dyn ec2_wrapper::Ec2Wrapper,
+pub async fn list_amis(
+    ec2_client: &Ec2Client,
     filter_values: &HashMap<String, Vec<String>>,
     search_string: Option<String>,
 ) -> Result<()> {
@@ -66,16 +66,13 @@ pub fn list_amis(
         request.filters = Some(filters);
     }
 
-    info!("Request: {:?}", request);
-
     let mut image_info: Vec<AmiInfo> = vec![];
     let search_regex: Option<Regex> = match search_string {
         None => None,
         Some(ref search) => Some(Regex::new(search)?),
     };
-    match ec2_client.describe_images(request)?.images {
+    match ec2_client.describe_images(request).await?.images {
         Some(images) => {
-            info!("Call returned {} images", images.len());
             for image in images {
                 match search_regex {
                     None => {
@@ -100,7 +97,6 @@ pub fn list_amis(
             }
         }
         None => {
-            info!("Call returned");
             println!("No images found");
         }
     };

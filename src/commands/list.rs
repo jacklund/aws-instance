@@ -1,12 +1,9 @@
-extern crate rusoto_credential;
-extern crate rusoto_ec2;
-
-use crate::{ec2_wrapper, util, Result};
+use crate::{util, Result};
+use rusoto_ec2::Ec2Client;
 use serde_json::{Map, Value};
 
-pub fn list(ec2_client: &dyn ec2_wrapper::Ec2Wrapper, ansible: bool) -> Result<()> {
-    debug!("Calling get_all_instances");
-    let instances = util::get_all_instances(ec2_client)?;
+pub async fn list(ec2_client: &Ec2Client, ansible: bool) -> Result<()> {
+    let instances = util::get_all_instances(ec2_client).await?;
     if ansible {
         let mut inventory = Map::new();
         for instance in instances {

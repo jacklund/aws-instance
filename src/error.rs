@@ -1,7 +1,9 @@
 use chrono;
 use regex;
 use rusoto_core::request::HttpDispatchError;
-use rusoto_core::{CredentialsError, RusotoError};
+use rusoto_core::RusotoError;
+use rusoto_credential::CredentialsError;
+use serde::{self, Deserialize};
 use serde_json;
 use serde_xml_rs;
 use snafu::Snafu;
@@ -89,6 +91,9 @@ pub enum AwsInstanceError {
 
     #[snafu(display("Error parsing JSON: {}", error))]
     JSONParseError { error: serde_json::Error },
+
+    #[snafu(display("Blocking error"))]
+    Blocking,
 }
 
 #[derive(Debug, Deserialize)]
@@ -139,7 +144,7 @@ where
     fn from(e: RusotoError<T>) -> Self {
         match e {
             RusotoError::Service(inner) => AwsInstanceError::Service {
-                message: inner.description().into(),
+                message: inner.to_string(),
             },
             RusotoError::HttpDispatch(error) => AwsInstanceError::HttpDispatch { source: error },
             RusotoError::Credentials(error) => AwsInstanceError::Credentials { source: error },
@@ -157,6 +162,7 @@ where
                     request_id: xml_response.request_id,
                 }
             }
+            RusotoError::Blocking => AwsInstanceError::Blocking,
         }
     }
 }

@@ -1,48 +1,46 @@
-extern crate chrono;
-extern crate clap;
-extern crate dirs;
-extern crate env_logger;
-#[macro_use]
-extern crate lazy_static;
-#[macro_use]
-extern crate log;
-extern crate regex;
-extern crate rusoto_core;
-extern crate rusoto_credential;
-extern crate rusoto_ec2;
-#[macro_use]
-extern crate serde_derive;
-extern crate serde_json;
-extern crate serde_xml_rs;
-extern crate snafu;
-extern crate structopt;
-
 mod cmdline;
 mod commands;
-mod ec2_wrapper;
 mod error;
 mod profile;
 mod util;
 
-use rusoto_core::Region;
+use rusoto_core::{HttpClient, Region};
+use rusoto_credential::{DefaultCredentialsProvider, ProfileProvider};
+use rusoto_ec2::Ec2Client;
 use std::str::FromStr;
 
 use crate::cmdline::parse_command_line;
 use crate::profile::{get_profile, ConfigFileReader, Profile};
+use tokio;
 
 pub use crate::error::{AwsInstanceError, Result};
 pub use crate::util::print_state_changes;
 
-fn main() {
+#[tokio::main]
+async fn main() {
     env_logger::init();
 
-    if let Err(error) = run_commands() {
+    if let Err(error) = run_commands().await {
         eprintln!("{}", error);
         std::process::exit(1);
     }
 }
 
-fn run_commands() -> Result<()> {
+fn get_ec2_client(region: Region, profile: &str) -> Ec2Client {
+    let mut profile_provider = ProfileProvider::new().expect("Error creating profile provider");
+    if !profile.is_empty() {
+        profile_provider.set_profile(profile);
+        Ec2Client::new_with(HttpClient::new().unwrap(), profile_provider, region)
+    } else {
+        Ec2Client::new_with(
+            HttpClient::new().unwrap(),
+            DefaultCredentialsProvider::new().unwrap(),
+            region,
+        )
+    }
+}
+
+async fn run_commands() -> Result<()> {
     let options = parse_command_line();
 
     let config_file = ConfigFileReader::new(options.config_file);
@@ -53,8 +51,8 @@ fn run_commands() -> Result<()> {
         None => profile.region.clone(),
     };
 
-    let ec2_wrapper = ec2_wrapper::AwsEc2Client::new(region, &profile_name);
-    options.subcommand.run(&ec2_wrapper, profile)?;
+    let ec2_client = get_ec2_client(region, &profile_name);
+    options.subcommand.run(&ec2_client, profile).await?;
 
     Ok(())
 }

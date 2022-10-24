@@ -1,4 +1,5 @@
 use dirs;
+use lazy_static::lazy_static;
 use regex::Regex;
 use rusoto_core::Region;
 use std::collections::BTreeMap;
@@ -122,7 +123,6 @@ impl ConfigFileReader {
 
     fn parse(&mut self, file_path: &PathBuf, section_regex: &Regex) {
         if file_path.exists() {
-            debug!("Parsing {:?}", file_path);
             let file = File::open(file_path.clone())
                 .unwrap_or_else(|_| panic!("Error opening config file {:?}", file_path));
             for line_or_error in BufReader::new(file).lines() {
@@ -143,7 +143,6 @@ impl ConfigFileReader {
     }
 
     fn parse_line(&mut self, line: &str, section_regex: &Regex) {
-        debug!("Parsing line '{}'", line);
         if section_regex.is_match(&line) {
             let section_name = section_regex
                 .captures(&line)
@@ -151,13 +150,11 @@ impl ConfigFileReader {
                 .get(1)
                 .expect("No section name found")
                 .as_str();
-            debug!("Parsed section name '{}'", section_name);
             self.set_section_name(section_name);
         } else if VALUE_REGEX.is_match(&line) {
             let captures = VALUE_REGEX.captures(&line).unwrap();
             let key = captures.get(1).unwrap().as_str();
             let value = captures.get(2).unwrap().as_str();
-            debug!("Parsed key = {}, value = {}", key, value);
             self.set_value(key, value);
         }
     }
@@ -170,7 +167,6 @@ impl ConfigFileReader {
             self.add_profile(profile_name, profile);
             self.current_profile = Profile::default();
         }
-        debug!("Setting profile name to {}", section_name);
         self.profile_name = Some(section_name.to_string());
     }
 
@@ -179,7 +175,6 @@ impl ConfigFileReader {
     }
 
     fn add_profile(&mut self, name: String, profile: Profile) {
-        debug!("Adding profile named {}: {:?}", name, profile);
         self.config_map.insert(name, profile);
     }
 

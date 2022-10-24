@@ -1,8 +1,8 @@
-use crate::{ec2_wrapper, print_state_changes, util, AwsInstanceError, Result};
-use rusoto_ec2;
+use crate::{print_state_changes, util, AwsInstanceError, Result};
+use rusoto_ec2::{Ec2, Ec2Client};
 
-pub fn destroy_instance(ec2_client: &dyn ec2_wrapper::Ec2Wrapper, name: &str) -> Result<()> {
-    match util::get_instance_by_name(ec2_client, name)? {
+pub async fn destroy_instance(ec2_client: &Ec2Client, name: &str) -> Result<()> {
+    match util::get_instance_by_name(ec2_client, name).await? {
         Some(instance) => {
             let instance_id = instance.instance_id.unwrap();
 
@@ -13,13 +13,13 @@ pub fn destroy_instance(ec2_client: &dyn ec2_wrapper::Ec2Wrapper, name: &str) ->
                 key: Some("Name".into()),
                 value: Some(format!("{}-terminated", name)),
             }];
-            ec2_client.create_tags(tag_request)?;
+            ec2_client.create_tags(tag_request).await?;
 
             // Terminate the instance
             let mut request = rusoto_ec2::TerminateInstancesRequest::default();
             request.instance_ids = vec![instance_id];
 
-            let result = ec2_client.terminate_instances(request)?;
+            let result = ec2_client.terminate_instances(request).await?;
 
             // Print the state change
             if let Some(state_changes) = result.terminating_instances {

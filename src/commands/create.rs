@@ -1,6 +1,7 @@
-use crate::{ec2_wrapper, util, AwsInstanceError, Result};
+use crate::{util, AwsInstanceError, Result};
 use rusoto_ec2::{
-    IamInstanceProfileSpecification, Reservation, RunInstancesRequest, Tag, TagSpecification,
+    Ec2, Ec2Client, IamInstanceProfileSpecification, Reservation, RunInstancesRequest, Tag,
+    TagSpecification,
 };
 
 #[derive(Debug)]
@@ -14,11 +15,11 @@ pub struct CreateOptions {
     pub security_group_ids: Vec<String>,
 }
 
-pub fn create_instance(
-    ec2_client: &dyn ec2_wrapper::Ec2Wrapper,
+pub async fn create_instance(
+    ec2_client: &Ec2Client,
     options: CreateOptions,
 ) -> Result<Reservation> {
-    match util::get_instance_by_name(ec2_client, &options.name)? {
+    match util::get_instance_by_name(ec2_client, &options.name).await? {
         Some(_) => Err(AwsInstanceError::CreateInstanceError {
             instance_name: options.name,
             message: "Instance with that name already exists".into(),
@@ -52,8 +53,7 @@ pub fn create_instance(
                     request.tag_specifications = Some(vec![name_tag_spec]);
                 }
             }
-            debug!("Calling run_instances with request: {:?}", request);
-            Ok(ec2_client.run_instances(request)?)
+            Ok(ec2_client.run_instances(request).await?)
         }
     }
 }
