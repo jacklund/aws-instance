@@ -1,5 +1,0 @@
-# vim:ft=ansible:
-
----
-- name: Install nvim plugins
-  command: nvim +'Pluginstall --sync' +qa
