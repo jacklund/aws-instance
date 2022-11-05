@@ -41,7 +41,7 @@ pub enum SubCommands {
         /// Instance name
         name: String,
 
-        #[structopt(name = "AMI-ID")]
+        #[structopt(short, long = "ami-id")]
         /// AMI Image ID to use
         ami_id: String,
 
