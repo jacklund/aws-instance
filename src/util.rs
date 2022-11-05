@@ -1,5 +1,6 @@
-use crate::Result;
+use crate::{cmdline::OsNames, Result};
 use rusoto_ec2::{Ec2, Ec2Client};
+use std::str::FromStr;
 
 pub fn get_name(instance: &rusoto_ec2::Instance) -> String {
     match instance.tags {
@@ -49,6 +50,21 @@ pub async fn get_instance_by_name(
     };
 
     Ok(instance)
+}
+
+pub async fn get_os_for_instance(instance: &rusoto_ec2::Instance) -> Option<OsNames> {
+    match instance.tags.clone().map(|v| {
+        v.iter()
+            .find(|t| t.key.is_some() && t.key.clone().unwrap() == "OS")
+            .map(|t| t.value.clone().unwrap())
+    }) {
+        None => None,
+        Some(None) => None,
+        Some(Some(value)) => match OsNames::from_str(&value) {
+            Ok(value) => Some(value),
+            Err(_) => None,
+        },
+    }
 }
 
 pub async fn get_all_instances(ec2_client: &Ec2Client) -> Result<Vec<rusoto_ec2::Instance>> {

@@ -14,6 +14,65 @@ use rusoto_ec2::Ec2Client;
 
 const DEFAULT_INSTANCE_TYPE: &str = "m1.small";
 
+#[derive(Clone, Debug, Eq, Hash, PartialEq, StructOpt)]
+pub enum OsNames {
+    AmazonLinux,
+    CentOS,
+    Debian,
+    Fedora,
+    RHEL,
+    Suse,
+    Ubuntu,
+}
+
+impl std::fmt::Display for OsNames {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                OsNames::AmazonLinux => "AmazonLinux",
+                OsNames::CentOS => "CentOS",
+                OsNames::Debian => "Debian",
+                OsNames::Fedora => "Fedora",
+                OsNames::RHEL => "RHEL",
+                OsNames::Suse => "Suse",
+                OsNames::Ubuntu => "Ubuntu",
+            }
+        )
+    }
+}
+
+#[derive(Debug)]
+pub enum OsNamesError {
+    ParseError(String),
+}
+
+impl std::fmt::Display for OsNamesError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            OsNamesError::ParseError(value) => write!(f, "Error parsing {}", value),
+        }
+    }
+}
+
+impl std::str::FromStr for OsNames {
+    type Err = OsNamesError;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "amazonlinux" => Ok(OsNames::AmazonLinux),
+            "centos" => Ok(OsNames::CentOS),
+            "debian" => Ok(OsNames::Debian),
+            "fedora" => Ok(OsNames::Fedora),
+            "rhel" => Ok(OsNames::RHEL),
+            "suse" => Ok(OsNames::Suse),
+            "ubuntu" => Ok(OsNames::Ubuntu),
+            _ => Err(OsNamesError::ParseError(s.to_string())),
+        }
+    }
+}
+
 #[derive(Debug, StructOpt)]
 #[structopt(name = "aws-instance", about = "Manage AWS instances")]
 pub struct CmdLineOptions {
@@ -69,6 +128,10 @@ pub enum SubCommands {
         #[structopt(short, long = "security-groups")]
         /// Security groups for the instance
         security_group_ids: Vec<String>,
+
+        #[structopt(short, long = "os-name")]
+        /// Name of the OS
+        os_name: Option<OsNames>,
     },
 
     #[structopt(name = "destroy", about = "Destroy an AWS instance by name")]
@@ -110,7 +173,7 @@ pub enum SubCommands {
 
         #[structopt(long, short)]
         /// User name to log in as
-        username: String,
+        username: Option<String>,
 
         #[structopt(long, short)]
         /// Path to SSH key to use
@@ -223,6 +286,7 @@ impl SubCommands {
             instance_type,
             keypair_name,
             security_group_ids,
+            os_name,
         } = self
         {
             let my_security_groups =
@@ -241,9 +305,10 @@ impl SubCommands {
                     instance_type: instance_type
                         .clone()
                         .or(profile.default_instance_type)
-                        .or(Some(DEFAULT_INSTANCE_TYPE.into())),
+                        .or_else(|| Some(DEFAULT_INSTANCE_TYPE.into())),
                     keypair_name: keypair_name.clone().or(profile.keypair),
                     security_group_ids: my_security_groups,
+                    os_name: os_name.clone(),
                 },
             )
             .await?;

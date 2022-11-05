@@ -7,18 +7,21 @@ pub async fn destroy_instance(ec2_client: &Ec2Client, name: &str) -> Result<()> 
             let instance_id = instance.instance_id.unwrap();
 
             // Change the instance name tag
-            let mut tag_request = rusoto_ec2::CreateTagsRequest::default();
-            tag_request.resources = vec![instance_id.clone()];
-            tag_request.tags = vec![rusoto_ec2::Tag {
-                key: Some("Name".into()),
-                value: Some(format!("{}-terminated", name)),
-            }];
+            let tag_request = rusoto_ec2::CreateTagsRequest {
+                resources: vec![instance_id.clone()],
+                tags: vec![rusoto_ec2::Tag {
+                    key: Some("Name".into()),
+                    value: Some(format!("{}-terminated", name)),
+                }],
+                ..Default::default()
+            };
             ec2_client.create_tags(tag_request).await?;
 
             // Terminate the instance
-            let mut request = rusoto_ec2::TerminateInstancesRequest::default();
-            request.instance_ids = vec![instance_id];
-
+            let request = rusoto_ec2::TerminateInstancesRequest {
+                instance_ids: vec![instance_id],
+                ..Default::default()
+            };
             let result = ec2_client.terminate_instances(request).await?;
 
             // Print the state change
