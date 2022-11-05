@@ -23,7 +23,7 @@ pub async fn list(ec2_client: &Ec2Client, ansible: bool) -> Result<()> {
     } else {
         println!(
             "{0: <15} {1: <25} {2: <15} {3: <25} {4: <15} {5: <15}",
-            "Name", "Instance ID", "State", "AMI ID", "Public IP", "Public DNS"
+            "Name", "Instance ID", "State", "AMI ID", "Public IP", "Security Groups"
         );
         for instance in instances {
             let name = util::get_name(&instance);
@@ -34,13 +34,21 @@ pub async fn list(ec2_client: &Ec2Client, ansible: bool) -> Result<()> {
                 .public_ip_address
                 .clone()
                 .unwrap_or("N/A".to_string());
-            let public_dns = instance
-                .public_dns_name
-                .clone()
-                .unwrap_or_else(|| "N/A".to_string());
+            let security_groups = instance
+                .security_groups
+                .and_then(|v| {
+                    Some(
+                        v.iter()
+                            .map(|gid| gid.clone().group_name)
+                            .map(|gname| gname.unwrap_or("N/A".to_string()))
+                            .collect::<Vec<String>>()
+                            .join(", "),
+                    )
+                })
+                .unwrap_or_else(|| "None".to_string());
             println!(
                 "{0: <15} {1: <25} {2: <15} {3: <25} {4: <15} {5: <15}",
-                name, instance_id, state, image_id, public_ip, public_dns,
+                name, instance_id, state, image_id, public_ip, security_groups,
             );
         }
     }
