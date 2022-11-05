@@ -155,7 +155,7 @@ impl SubCommands {
             }
 
             SubCommands::Destroy { name } => {
-                destroy_instance(client, &name).await?;
+                destroy_instance(client, name).await?;
             }
 
             SubCommands::Ssh { .. } => {
@@ -163,11 +163,11 @@ impl SubCommands {
             }
 
             SubCommands::Start { name } => {
-                start(client, &name).await?;
+                start(client, name).await?;
             }
 
             SubCommands::Stop { name } => {
-                stop(client, &name).await?;
+                stop(client, name).await?;
             }
         }
         Ok(())
@@ -269,7 +269,7 @@ impl SubCommands {
                     mysshopts.push(keypath);
                 }
             }
-            ssh(client, &name, &username, &mysshopts).await?;
+            ssh(client, name, username, &mysshopts).await?;
         } else {
             panic!("Unexpected value in ssh: {:?}", self);
         }

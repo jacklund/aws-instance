@@ -5,8 +5,10 @@ pub async fn start(ec2_client: &Ec2Client, name: &str) -> Result<()> {
     match util::get_instance_by_name(ec2_client, name).await? {
         Some(instance) => {
             let instance_id = instance.instance_id.unwrap();
-            let mut request = rusoto_ec2::StartInstancesRequest::default();
-            request.instance_ids = vec![instance_id];
+            let request = rusoto_ec2::StartInstancesRequest {
+                instance_ids: vec![instance_id],
+                ..Default::default()
+            };
 
             let result = ec2_client.start_instances(request).await?;
             if let Some(state_changes) = result.starting_instances {

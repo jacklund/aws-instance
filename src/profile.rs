@@ -1,4 +1,3 @@
-use dirs;
 use lazy_static::lazy_static;
 use regex::Regex;
 use rusoto_core::Region;
@@ -19,25 +18,13 @@ lazy_static! {
     static ref VALUE_REGEX: Regex = Regex::new(r"^\s*(\S*)\s*=\s*(\S*).*$").unwrap();
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct Profile {
     pub region: Region,
     pub keypair: Option<String>,
     pub ssh_key: Option<String>,
     pub default_instance_type: Option<String>,
     pub security_groups: Option<Vec<String>>,
-}
-
-impl Default for Profile {
-    fn default() -> Self {
-        Profile {
-            region: Region::default(),
-            keypair: None,
-            ssh_key: None,
-            default_instance_type: None,
-            security_groups: None,
-        }
-    }
 }
 
 impl Profile {
@@ -86,10 +73,10 @@ pub fn get_aws_config_file_path() -> PathBuf {
 
 pub fn get_our_config_file_path(config_file: Option<String>) -> PathBuf {
     match config_file
-        .map(|s| PathBuf::from(s))
-        .or(env::var_os("AWS_INSTANCE_CONFIG_FILE").map(|s| PathBuf::from(s)))
+        .map(PathBuf::from)
+        .or_else(|| env::var_os("AWS_INSTANCE_CONFIG_FILE").map(PathBuf::from))
     {
-        Some(value) => PathBuf::from(value),
+        Some(value) => value,
         None => {
             let mut config_path = dirs::home_dir().expect("Home directory not found");
             config_path.push(".aws-instance");
@@ -143,16 +130,16 @@ impl ConfigFileReader {
     }
 
     fn parse_line(&mut self, line: &str, section_regex: &Regex) {
-        if section_regex.is_match(&line) {
+        if section_regex.is_match(line) {
             let section_name = section_regex
-                .captures(&line)
+                .captures(line)
                 .unwrap()
                 .get(1)
                 .expect("No section name found")
                 .as_str();
             self.set_section_name(section_name);
-        } else if VALUE_REGEX.is_match(&line) {
-            let captures = VALUE_REGEX.captures(&line).unwrap();
+        } else if VALUE_REGEX.is_match(line) {
+            let captures = VALUE_REGEX.captures(line).unwrap();
             let key = captures.get(1).unwrap().as_str();
             let value = captures.get(2).unwrap().as_str();
             self.set_value(key, value);
@@ -162,8 +149,8 @@ impl ConfigFileReader {
     fn set_section_name(&mut self, section_name: &str) {
         if self.profile_name.is_some() {
             let config = self.clone();
-            let profile_name = config.profile_name.unwrap().clone();
-            let profile = config.current_profile.clone();
+            let profile_name = config.profile_name.unwrap();
+            let profile = config.current_profile;
             self.add_profile(profile_name, profile);
             self.current_profile = Profile::default();
         }

@@ -58,9 +58,10 @@ pub async fn list_amis(
     if !filter_values.is_empty() {
         let mut filters = vec![];
         for (key, values) in filter_values.iter() {
-            let mut filter = Filter::default();
-            filter.name = Some(key.to_string());
-            filter.values = Some(values.to_vec());
+            let filter = Filter {
+                name: Some(key.to_string()),
+                values: Some(values.to_vec()),
+            };
             filters.push(filter);
         }
         request.filters = Some(filters);

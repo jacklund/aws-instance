@@ -5,7 +5,7 @@ pub fn get_name(instance: &rusoto_ec2::Instance) -> String {
     match instance.tags {
         Some(ref tags) => {
             for tag in tags {
-                if let Some("Name") = tag.key.as_ref().map(String::as_str) {
+                if let Some("Name") = tag.key.as_deref() {
                     match tag.value {
                         Some(ref value) => return value.to_string(),
                         None => return String::new(),

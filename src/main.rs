@@ -11,7 +11,6 @@ use std::str::FromStr;
 
 use crate::cmdline::parse_command_line;
 use crate::profile::{get_profile, ConfigFileReader, Profile};
-use tokio;
 
 pub use crate::error::{AwsInstanceError, Result};
 pub use crate::util::print_state_changes;

@@ -1,11 +1,7 @@
-use chrono;
-use regex;
 use rusoto_core::request::HttpDispatchError;
 use rusoto_core::RusotoError;
 use rusoto_credential::CredentialsError;
 use serde::{self, Deserialize};
-use serde_json;
-use serde_xml_rs;
 use snafu::Snafu;
 use std::convert::From;
 use std::fmt::Display;
