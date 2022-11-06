@@ -5,6 +5,7 @@ use crate::commands::create::{create_instance, CreateOptions};
 use crate::commands::destroy::destroy_instance;
 use crate::commands::list::list;
 use crate::commands::list_amis::list_amis;
+use crate::commands::list_security_groups::list_security_groups;
 use crate::commands::ssh::ssh;
 use crate::commands::start::start;
 use crate::commands::stop::stop;
@@ -166,6 +167,13 @@ pub enum SubCommands {
         search: Option<String>,
     },
 
+    #[structopt(name = "list-security-groups", about = "List AWS security groups")]
+    ListGroups {
+        #[structopt(name = "NAME")]
+        /// Security group name
+        name: Option<String>,
+    },
+
     #[structopt(name = "ssh", about = "SSH into an instance")]
     Ssh {
         /// Instance name
@@ -211,6 +219,10 @@ impl SubCommands {
 
             SubCommands::ListAmis { .. } => {
                 self.list_amis(client).await?;
+            }
+
+            SubCommands::ListGroups { .. } => {
+                self.list_security_groups(client).await?;
             }
 
             SubCommands::Create { .. } => {
@@ -272,6 +284,16 @@ impl SubCommands {
             list_amis(client, &filters, search.clone()).await?;
         } else {
             panic!("Unexpected value in list_amis: {:?}", self);
+        }
+
+        Ok(())
+    }
+
+    pub async fn list_security_groups(&self, client: &Ec2Client) -> Result<()> {
+        if let SubCommands::ListGroups { name } = self {
+            list_security_groups(client, name).await?;
+        } else {
+            panic!("Unexpected value in list: {:?}", self);
         }
 
         Ok(())
