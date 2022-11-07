@@ -1,5 +1,5 @@
+use clap::{Parser, ValueEnum};
 use std::collections::HashMap;
-use structopt::StructOpt;
 
 use crate::commands::create::{create_instance, CreateOptions};
 use crate::commands::destroy::destroy_instance;
@@ -15,7 +15,7 @@ use rusoto_ec2::Ec2Client;
 
 const DEFAULT_INSTANCE_TYPE: &str = "m1.small";
 
-#[derive(Clone, Debug, Eq, Hash, PartialEq, StructOpt)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, ValueEnum)]
 pub enum OsNames {
     AmazonLinux,
     CentOS,
@@ -74,116 +74,111 @@ impl std::str::FromStr for OsNames {
     }
 }
 
-#[derive(Debug, StructOpt)]
-#[structopt(name = "aws-instance", about = "Manage AWS instances")]
+#[derive(Debug, Parser)]
+#[command(name = "aws-instance", about = "Manage AWS instances")]
 pub struct CmdLineOptions {
-    #[structopt(long = "config-file", short = "C")]
+    #[arg(long = "config-file", short = 'C')]
     /// Path to config file
     pub config_file: Option<String>,
 
-    #[structopt(short, long)]
+    #[arg(short, long)]
     /// Set the AWS profile to use
     pub profile: Option<String>,
 
-    #[structopt(short, long)]
+    #[arg(short, long)]
     /// Set the AWS region to use
     pub region: Option<String>,
 
-    #[structopt(subcommand)]
+    #[command(subcommand)]
     pub subcommand: SubCommands,
 }
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 pub enum SubCommands {
-    #[structopt(name = "create", about = "Create a named AWS instance")]
+    #[command(name = "create", about = "Create a named AWS instance")]
     Create {
-        #[structopt(name = "NAME")]
+        #[arg(name = "NAME")]
         /// Instance name
         name: String,
 
-        #[structopt(short, long = "ami-id")]
+        #[arg(short, long = "ami-id")]
         /// AMI Image ID to use
         ami_id: String,
 
-        #[structopt(
-            short,
-            long = "ebs-optimized",
-            parse(try_from_str),
-            default_value = "false"
-        )]
+        #[arg(short, long = "ebs-optimized", default_value = "false")]
         /// Is it EBS optimized?
         ebs_optimized: bool,
 
-        #[structopt(short, long = "iam-profile")]
+        #[arg(short, long = "iam-profile")]
         /// IAM profile to use
         iam_profile: Option<String>,
 
-        #[structopt(short = "t", long = "instance-type")]
+        #[arg(short = 't', long = "instance-type")]
         /// Instance type [default: m1.small]
         instance_type: Option<String>,
 
-        #[structopt(short, long = "keypair")]
+        #[arg(short, long = "keypair")]
         /// Key pair to use to connect
         keypair_name: Option<String>,
 
-        #[structopt(short, long = "security-groups")]
+        #[arg(short, long = "security-groups")]
         /// Security groups for the instance
         security_group_ids: Vec<String>,
 
-        #[structopt(short, long = "os-name")]
+        #[arg(short, long = "os-name")]
         /// Name of the OS
         os_name: Option<OsNames>,
     },
 
-    #[structopt(name = "destroy", about = "Destroy an AWS instance by name")]
+    #[command(name = "destroy", about = "Destroy an AWS instance by name")]
     Destroy {
         /// Instance name
         name: String,
     },
 
-    #[structopt(name = "list", about = "List AWS instances")]
+    #[command(name = "list", about = "List AWS instances")]
     List {
-        #[structopt(long)]
+        #[arg(long)]
         /// Whether to output as required by ansible inventory
         ansible: bool,
     },
 
-    #[structopt(name = "list-amis", about = "List AMIs")]
+    #[command(name = "list-amis", about = "List AMIs")]
     ListAmis {
-        #[structopt(long, short)]
+        #[arg(long, short)]
         /// Image name. You may use '?' and '*' to return multiple values
         name: Option<String>,
 
-        #[structopt(long, default_value = "x86_64")]
+        #[arg(long, default_value = "x86_64")]
         /// Instance architecture
         architecture: String,
 
-        #[structopt(long, name = "image-id")]
+        #[arg(long, name = "image-id")]
         /// AMI Image ID
         image_id: Option<String>,
 
-        #[structopt(long)]
+        #[arg(long)]
         /// Filter images by image name using regular expression
         search: Option<String>,
     },
 
-    #[structopt(name = "list-security-groups", about = "List AWS security groups")]
+    #[command(name = "list-security-groups", about = "List AWS security groups")]
     ListGroups {
-        #[structopt(name = "NAME")]
+        #[arg(name = "NAME")]
         /// Security group name
         name: Option<String>,
     },
 
-    #[structopt(name = "ssh", about = "SSH into an instance")]
+    #[command(name = "ssh", about = "SSH into an instance")]
     Ssh {
         /// Instance name
         name: String,
 
-        #[structopt(long, short)]
+        #[arg(long, short)]
         /// User name to log in as
         username: Option<String>,
 
-        #[structopt(long, short)]
+        #[arg(long, short)]
         /// Path to SSH key to use
         key: Option<String>,
 
@@ -191,23 +186,23 @@ pub enum SubCommands {
         sshopts: Vec<String>,
     },
 
-    #[structopt(name = "start", about = "Start a stopped instance")]
+    #[command(name = "start", about = "Start a stopped instance")]
     Start {
-        #[structopt(name = "NAME")]
+        #[arg(name = "NAME")]
         /// Instance name
         name: String,
     },
 
-    #[structopt(name = "stop", about = "Stop a running instance")]
+    #[command(name = "stop", about = "Stop a running instance")]
     Stop {
-        #[structopt(name = "NAME")]
+        #[arg(name = "NAME")]
         /// Instance name
         name: String,
     },
 }
 
 pub fn parse_command_line() -> CmdLineOptions {
-    CmdLineOptions::from_args()
+    CmdLineOptions::parse()
 }
 
 impl SubCommands {
