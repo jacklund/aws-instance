@@ -24,7 +24,7 @@ pub async fn list_security_groups(ec2_client: &Ec2Client, name: &Option<String>)
                     group.description.unwrap_or_else(|| "N/A".to_string()),
                 );
                 println!("  ingress:");
-                for ingress in group.ip_permissions.unwrap_or_else(|| Vec::new()) {
+                for ingress in group.ip_permissions.unwrap_or_default() {
                     let from_port_string = ingress
                         .from_port
                         .map(|p| p.to_string())
@@ -52,7 +52,7 @@ pub async fn list_security_groups(ec2_client: &Ec2Client, name: &Option<String>)
                     );
                 }
                 println!("  egress:");
-                for egress in group.ip_permissions_egress.unwrap_or_else(|| Vec::new()) {
+                for egress in group.ip_permissions_egress.unwrap_or_default() {
                     let from_port_string = egress
                         .from_port
                         .map(|p| p.to_string())

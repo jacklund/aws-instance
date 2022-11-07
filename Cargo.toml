@@ -1,14 +1,13 @@
 [package]
 name = "aws-instance"
-version = "0.1.1"
+version = "1.0.0"
 authors = ["Jack Lund <jackl@geekheads.net>"]
-edition = "2018"
+edition = "2021"
 description = "Create and SSH into AWS instances"
 license = "MIT"
 
 [dependencies]
 clap = { version = "4.0.19", features = ["derive"] }
-serde_derive = "1.0.99"
 serde = "1.0.98"
 rusoto_core = "0.48.0"
 rusoto_ec2 = "0.48.0"
@@ -22,5 +21,4 @@ serde-xml-rs = "0.3.1"
 snafu = "0.4.4"
 chrono = "0.4.7"
 serde_json = "1.0.40"
-async-trait = "0.1.58"
 tokio = "1.21.2"
