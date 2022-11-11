@@ -1,4 +1,5 @@
-use clap::{Parser, ValueEnum};
+use clap::{Command, CommandFactory, Parser, ValueEnum};
+use clap_complete::{generate, Generator, Shell};
 use std::collections::HashMap;
 
 use crate::commands::create::{create_instance, CreateOptions};
@@ -199,6 +200,16 @@ pub enum SubCommands {
         /// Instance name
         name: String,
     },
+
+    #[command(
+        name = "generate-completions",
+        about = "Generate command-line completions\n\nExample:\n   aws-instance generate-completions zsh > ~/.zsh_completions/_aws-instance"
+    )]
+    GenerateCompletions {
+        #[arg(name = "SHELL")]
+        /// Shell name
+        shell: Shell,
+    },
 }
 
 pub fn parse_command_line() -> CmdLineOptions {
@@ -238,6 +249,10 @@ impl SubCommands {
 
             SubCommands::Stop { name } => {
                 stop(client, name).await?;
+            }
+
+            SubCommands::GenerateCompletions { shell } => {
+                self.generate_completions(*shell);
             }
         }
         Ok(())
@@ -358,4 +373,12 @@ impl SubCommands {
 
         Ok(())
     }
+
+    fn generate_completions(&self, shell: Shell) {
+        print_completions(shell, &mut CmdLineOptions::command());
+    }
+}
+
+fn print_completions<G: Generator>(gen: G, cmd: &mut Command) {
+    generate(gen, cmd, cmd.get_name().to_string(), &mut std::io::stdout());
 }
